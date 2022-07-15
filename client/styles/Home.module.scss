@@ -1,0 +1,6 @@
+.container {
+  @apply p-5;
+  .studentMain {
+    @apply grid grid-cols-[200px_minmax(500px,_1fr)_200px];
+  }
+}

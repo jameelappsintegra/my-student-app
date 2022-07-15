@@ -1,0 +1,17 @@
+.sidemenu {
+  .logo {
+    @apply px-2 my-4;
+  }
+  &_list {
+    li {
+      @apply text-gray-400 py-3 pl-2 ml-2 text-sm;
+      &.active {
+        @apply border-r;
+      }
+      &:hover,
+      &.active {
+        @apply border-r-4 border-[#5b61b5] text-black cursor-pointer bg-slate-400/25 rounded-l-md block;
+      }
+    }
+  }
+}

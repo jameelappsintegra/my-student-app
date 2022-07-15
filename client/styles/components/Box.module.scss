@@ -1,0 +1,7 @@
+.main {
+  @apply border rounded-lg bg-white shadow-md;
+  &:global.shadow_none {
+    box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+    margin-bottom: 1rem;
+  }
+}
