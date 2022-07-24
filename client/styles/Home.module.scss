@@ -3,4 +3,7 @@
   .studentMain {
     @apply grid grid-cols-[200px_minmax(500px,_1fr)_200px];
   }
+  .studentMain_col {
+    @apply grid grid-cols-[200px_minmax(500px,_1fr)];
+  }
 }

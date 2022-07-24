@@ -2,9 +2,12 @@ import Sidemenu from "../sideMenu/sideMenu";
 import Head from "next/head";
 import Box from "../box/Box";
 import Leftcontent from "../leftContent/leftContent";
+import { useRouter } from "next/router";
 import styles from "../../styles/Home.module.scss";
 
 const Layout = ({ children }) => {
+  const router = useRouter();
+
   return (
     <div className={styles.container}>
       <Head>
@@ -14,12 +17,18 @@ const Layout = ({ children }) => {
       </Head>
       <div className="student-wrapper">
         <Box classes={"h-full  min-h-[92vh]"}>
-          <div className={styles.studentMain}>
+          <div
+            className={
+              router.pathname != "/allstudents"
+                ? styles.studentMain
+                : styles.studentMain_col
+            }
+          >
             <div className="side-menu">
               <Sidemenu />
             </div>
             <div className="main-content">{children}</div>
-            <Leftcontent />
+            {router.pathname != "/allstudents" && <Leftcontent />}
           </div>
         </Box>
       </div>

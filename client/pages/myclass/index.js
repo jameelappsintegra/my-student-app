@@ -8,7 +8,7 @@ const Myclass = () => {
           <h2 id="accordion-collapse-heading-1">
             <button
               type="button"
-              class="flex justify-between items-center p-5 w-full font-medium text-left text-gray-500 rounded-t-xl border border-b-0 border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="flex justify-between items-center p-5 w-full font-medium text-left text-gray-500 rounded-t-xl border border-b-0 border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
               data-accordion-target="#accordion-collapse-body-1"
               aria-expanded="true"
               aria-controls="accordion-collapse-body-1"
@@ -16,7 +16,7 @@ const Myclass = () => {
               <span>What is Flowbite?</span>
               <svg
                 data-accordion-icon
-                class="w-6 h-6 rotate-180 shrink-0"
+                className="w-6 h-6 rotate-180 shrink-0"
                 fill="currentColor"
                 viewBox="0 0 20 20"
                 xmlns="http://www.w3.org/2000/svg"
@@ -31,20 +31,20 @@ const Myclass = () => {
           </h2>
           <div
             id="accordion-collapse-body-1"
-            class="hidden"
+            className="hidden"
             aria-labelledby="accordion-collapse-heading-1"
           >
-            <div class="p-5 border border-b-0 border-gray-200 dark:border-gray-700 dark:bg-gray-900">
-              <p class="mb-2 text-gray-500 dark:text-gray-400">
+            <div className="p-5 border border-b-0 border-gray-200 dark:border-gray-700 dark:bg-gray-900">
+              <p className="mb-2 text-gray-500 dark:text-gray-400">
                 Flowbite is an open-source library of interactive components
                 built on top of Tailwind CSS including buttons, dropdowns,
                 modals, navbars, and more.
               </p>
-              <p class="text-gray-500 dark:text-gray-400">
+              <p className="text-gray-500 dark:text-gray-400">
                 Check out this guide to learn how to{" "}
                 <a
                   href="/docs/getting-started/introduction/"
-                  class="text-blue-600 dark:text-blue-500 hover:underline"
+                  className="text-blue-600 dark:text-blue-500 hover:underline"
                 >
                   get started
                 </a>{" "}
@@ -56,7 +56,7 @@ const Myclass = () => {
           <h2 id="accordion-collapse-heading-2">
             <button
               type="button"
-              class="flex justify-between items-center p-5 w-full font-medium text-left text-gray-500 border border-b-0 border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="flex justify-between items-center p-5 w-full font-medium text-left text-gray-500 border border-b-0 border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
               data-accordion-target="#accordion-collapse-body-2"
               aria-expanded="false"
               aria-controls="accordion-collapse-body-2"
@@ -64,7 +64,7 @@ const Myclass = () => {
               <span>Is there a Figma file available?</span>
               <svg
                 data-accordion-icon
-                class="w-6 h-6 shrink-0"
+                className="w-6 h-6 shrink-0"
                 fill="currentColor"
                 viewBox="0 0 20 20"
                 xmlns="http://www.w3.org/2000/svg"
@@ -79,20 +79,20 @@ const Myclass = () => {
           </h2>
           <div
             id="accordion-collapse-body-2"
-            class="hidden"
+            className="hidden"
             aria-labelledby="accordion-collapse-heading-2"
           >
-            <div class="p-5 border border-b-0 border-gray-200 dark:border-gray-700">
-              <p class="mb-2 text-gray-500 dark:text-gray-400">
+            <div className="p-5 border border-b-0 border-gray-200 dark:border-gray-700">
+              <p className="mb-2 text-gray-500 dark:text-gray-400">
                 Flowbite is first conceptualized and designed using the Figma
                 software so everything you see in the library has a design
                 equivalent in our Figma file.
               </p>
-              <p class="text-gray-500 dark:text-gray-400">
+              <p className="text-gray-500 dark:text-gray-400">
                 Check out the{" "}
                 <a
                   href="https://flowbite.com/figma/"
-                  class="text-blue-600 dark:text-blue-500 hover:underline"
+                  className="text-blue-600 dark:text-blue-500 hover:underline"
                 >
                   Figma design system
                 </a>{" "}
@@ -104,7 +104,7 @@ const Myclass = () => {
           <h2 id="accordion-collapse-heading-3">
             <button
               type="button"
-              class="flex justify-between items-center p-5 w-full font-medium text-left text-gray-500 border border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="flex justify-between items-center p-5 w-full font-medium text-left text-gray-500 border border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
               data-accordion-target="#accordion-collapse-body-3"
               aria-expanded="false"
               aria-controls="accordion-collapse-body-3"
@@ -114,7 +114,7 @@ const Myclass = () => {
               </span>
               <svg
                 data-accordion-icon
-                class="w-6 h-6 shrink-0"
+                className="w-6 h-6 shrink-0"
                 fill="currentColor"
                 viewBox="0 0 20 20"
                 xmlns="http://www.w3.org/2000/svg"
@@ -129,30 +129,30 @@ const Myclass = () => {
           </h2>
           <div
             id="accordion-collapse-body-3"
-            class="hidden"
+            className="hidden"
             aria-labelledby="accordion-collapse-heading-3"
           >
-            <div class="p-5 border border-t-0 border-gray-200 dark:border-gray-700">
-              <p class="mb-2 text-gray-500 dark:text-gray-400">
+            <div className="p-5 border border-t-0 border-gray-200 dark:border-gray-700">
+              <p className="mb-2 text-gray-500 dark:text-gray-400">
                 The main difference is that the core components from Flowbite
                 are open source under the MIT license, whereas Tailwind UI is a
                 paid product. Another difference is that Flowbite relies on
                 smaller and standalone components, whereas Tailwind UI offers
                 sections of pages.
               </p>
-              <p class="mb-2 text-gray-500 dark:text-gray-400">
+              <p className="mb-2 text-gray-500 dark:text-gray-400">
                 However, we actually recommend using both Flowbite, Flowbite
                 Pro, and even Tailwind UI as there is no technical reason
                 stopping you from using the best of two worlds.
               </p>
-              <p class="mb-2 text-gray-500 dark:text-gray-400">
+              <p className="mb-2 text-gray-500 dark:text-gray-400">
                 Learn more about these technologies:
               </p>
-              <ul class="pl-5 list-disc text-gray-500 dark:text-gray-400">
+              <ul className="pl-5 list-disc text-gray-500 dark:text-gray-400">
                 <li>
                   <a
                     href="https://flowbite.com/pro/"
-                    class="text-blue-600 dark:text-blue-500 hover:underline"
+                    className="text-blue-600 dark:text-blue-500 hover:underline"
                   >
                     Flowbite Pro
                   </a>
@@ -161,7 +161,7 @@ const Myclass = () => {
                   <a
                     href="https://tailwindui.com/"
                     rel="nofollow"
-                    class="text-blue-600 dark:text-blue-500 hover:underline"
+                    className="text-blue-600 dark:text-blue-500 hover:underline"
                   >
                     Tailwind UI
                   </a>

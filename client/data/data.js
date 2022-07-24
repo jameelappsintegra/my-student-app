@@ -34,6 +34,11 @@ const menuItems = [
     menu_name: "New Admission",
     link: "/newadmission",
   },
+  {
+    menu_Id: "8",
+    menu_name: "All Students",
+    link: "/allstudents",
+  },
 ];
 export default menuItems;
 

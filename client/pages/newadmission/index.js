@@ -1,6 +1,6 @@
 import Layout from "../../components/layout/layout";
 import Datepicker from "react-datepicker";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "react-datepicker/dist/react-datepicker.css";
 
 // CSS Modules, react-datepicker-cssmodules.css
@@ -8,6 +8,49 @@ import "react-datepicker/dist/react-datepicker-cssmodules.css";
 
 const Newadmisison = () => {
   const [dateofBirth, setDateofBirth] = useState(new Date());
+  const [studentData, setStudentData] = useState({
+    studentName: "",
+    dateOfBirth: "",
+    admissionDate: new Date(),
+    fatherName: "",
+    motherName: "",
+    address: "",
+    class: "",
+    section: "",
+    incharge: "",
+  });
+  const saveStudent = async (e) => {
+    e.preventDefault();
+    try {
+      // console.log(studentData, dateofBirth);
+      const body = studentData;
+      // if (
+      // studentData.studentName !== ""
+      // // studentData.dateOfBirth !== "" &&
+      // studentData.class !== "" &&
+      // studentData.incharge !== "" &&
+      // studentData.section !== "" &&
+      // studentData.fatherName !== "" &&
+      // studentData.motherName !== "" &&
+      // studentData.address !== "" &&
+      // studentData.admissionDate !== ""
+      // ) {
+      const resp = await fetch("http://localhost:4000/add-student", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      console.log(studentData, "studentData");
+      // if (resp.ok) {
+      // console.log(resp, "resp.body");
+      // setStudentData("");
+      // studentData.studentName = "";
+      // }
+    } catch (err) {
+      console.log(err);
+    }
+  };
   return (
     <>
       <Layout>
@@ -18,59 +61,117 @@ const Newadmisison = () => {
             <input
               type="text"
               placeholder="Full Name"
-              class="input w-full max-w-xs"
+              className="input w-full max-w-xs"
+              required
+              value={studentData.studentName}
+              onChange={(e) => {
+                setStudentData({
+                  ...studentData,
+                  studentName: e.target.value,
+                });
+              }}
             />
           </div>
           <div className="my-4">
             <Datepicker
               selected={dateofBirth}
-              //   onChange={(date: Date) => setDateofBirth(date)}
+              showYearDropdown // year show and scrolldown alos
+              scrollableYearDropdown
             />
           </div>
           <div className="my-4">
-            <div class="form-control w-full max-w-xs">
-              <label class="label">
-                <span class="label-text">Select Class</span>
+            <div className="form-control w-full max-w-xs">
+              <label className="label">
+                <span className="label-text">Select Class</span>
               </label>
             </div>
-            <select class="select select-bordered">
+            <select
+              className="select select-bordered"
+              required
+              selected={studentData.class}
+              onChange={(e) => {
+                setStudentData({ ...studentData, class: e.target.value });
+              }}
+            >
               <option>LKG</option>
               <option>UKG</option>
-              <option>First Standard</option>
-              <option>Second Standard</option>
-              <option>Third Standard</option>
-              <option>Fourth Standard</option>
-              <option>Fifth Standard</option>
-              <option>Sixth Standard</option>
-              <option>Seventh Standard</option>
-              <option>Eigth Standard</option>
-              <option>Nineth Standard</option>
-              <option>Tenth Standard</option>
-              <option>Eleventh Standard</option>
-              <option>Tevelvth Standard</option>
+              <option>1</option>
+              <option>2</option>
+              <option>3</option>
+              <option>4</option>
+              <option>5</option>
+              <option>6</option>
+              <option>7</option>
+              <option>8</option>
+              <option>9</option>
+              <option>10</option>
+              <option>11</option>
+              <option>12</option>
             </select>
           </div>
         </div>
         <div className="my-4">
           <input
             type="text"
+            placeholder="Section"
+            required
+            value={studentData.section}
+            className="input w-full max-w-xs"
+            onChange={(e) => {
+              setStudentData({ ...studentData, section: e.target.value });
+            }}
+          />
+        </div>
+        <div className="my-4">
+          <input
+            type="text"
+            placeholder="Incharge"
+            required
+            value={studentData.incharge}
+            className="input w-full max-w-xs"
+            onChange={(e) => {
+              setStudentData({ ...studentData, incharge: e.target.value });
+            }}
+          />
+        </div>
+        <div className="my-4">
+          <input
+            type="text"
             placeholder="Father Name"
-            class="input w-full max-w-xs"
+            required
+            value={studentData.fatherName}
+            className="input w-full max-w-xs"
+            onChange={(e) => {
+              setStudentData({ ...studentData, fatherName: e.target.value });
+            }}
           />
         </div>
         <div className="my-4">
           <input
             type="text"
             placeholder="Mother Name"
-            class="input w-full max-w-xs"
+            required
+            value={studentData.motherName}
+            className="input w-full max-w-xs"
+            onChange={(e) => {
+              setStudentData({ ...studentData, motherName: e.target.value });
+            }}
           />
         </div>
         <div className="my-4">
           <textarea
             placeholder="Student Address"
-            class="input w-full max-w-xs min-h-16"
+            required
+            value={studentData.address}
+            className="input w-full max-w-xs min-h-16"
+            onChange={(e) => {
+              setStudentData({ ...studentData, address: e.target.value });
+            }}
           ></textarea>
         </div>
+        <button className="btn btn-primary" onClick={saveStudent}>
+          Save
+        </button>
       </Layout>
     </>
   );

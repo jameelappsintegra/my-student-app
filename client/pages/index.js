@@ -29,27 +29,6 @@ export default function Home() {
         <h4>Academic Result</h4>
         <ReactEcharts option={academicResult} />
       </Box>
-      <div>
-        <button className="btn">Hello daisyUI</button>
-        <button class="btn btn-primary">One</button>
-        <button class="btn rounded-full">One</button>
-        <button class="btn rounded-none px-16">Two</button>
-        <div class="card w-96 bg-base-100 shadow-xl">
-          <figure>
-            <img
-              src="https://api.lorem.space/image/shoes?w=400&h=225"
-              alt="Shoes"
-            />
-          </figure>
-          <div class="card-body">
-            <h2 class="card-title">Shoes!</h2>
-            <p>If a dog chews shoes whose shoes does he choose?</p>
-            <div class="card-actions justify-end">
-              <button class="btn btn-primary">Buy Now</button>
-            </div>
-          </div>
-        </div>
-      </div>
     </Layout>
   );
 }

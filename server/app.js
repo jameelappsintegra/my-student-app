@@ -8,25 +8,30 @@ require("dotenv/config");
 const uri =
   "mongodb+srv://jameel1234:jameel1234@cluster0.yvees.mongodb.net/student_manager?retryWrites=true&w=majority";
 
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+
 mongoose
   .connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
   .then((result) => app.listen(5000))
   .catch((err) => console.log(err));
 
-app.get("/add-student", (req, res) => {
-  const student = new Student({
-    name: "Kennady",
-    dateOfBirth: "14-01-1986",
-    admissionDate: "04-01-2009",
-    fatherName: "Einstin",
-    motherName: "Neils",
-    address: "Parangipettai",
-    class: "4",
-    section: "B",
-    incharge: "Kennady",
-  });
-  student
-    .save()
+app.post("/add-student", (req, res) => {
+  const student = new Student(req.body);
+  if (req.body) {
+    student
+      .save()
+      .then((result) => {
+        res.send(result);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }
+});
+
+app.get("/all-students", (req, res) => {
+  Student.find()
     .then((result) => {
       res.send(result);
     })
@@ -35,8 +40,9 @@ app.get("/add-student", (req, res) => {
     });
 });
 
-app.get("/all-students", (req, res) => {
-  Student.find()
+app.delete("/student/:id", (req, res) => {
+  const id = req.params.id;
+  Student.findByIdAndDelete(id)
     .then((result) => {
       res.send(result);
     })
