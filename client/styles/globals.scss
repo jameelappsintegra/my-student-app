@@ -6,7 +6,7 @@
 
 html,
 body {
-  @apply bg-gradient-to-b bg-gradient-to-r from-pink-300 via-purple-300 to-indigo-400;
+  @apply bg-gradient-to-b bg-gradient-to-r from-pink-300 via-purple-300 to-indigo-400 text-sm;
   padding: 0;
   margin: 0;
   font-family: "Poppins", sans-serif;

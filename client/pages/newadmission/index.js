@@ -2,11 +2,14 @@ import Layout from "../../components/layout/layout";
 import Datepicker from "react-datepicker";
 import { useEffect, useState } from "react";
 import "react-datepicker/dist/react-datepicker.css";
+import { useRouter } from "next/router";
 
 // CSS Modules, react-datepicker-cssmodules.css
 import "react-datepicker/dist/react-datepicker-cssmodules.css";
 
 const Newadmisison = () => {
+  const router = useRouter();
+
   const [dateofBirth, setDateofBirth] = useState(new Date());
   const [studentData, setStudentData] = useState({
     studentName: "",
@@ -40,13 +43,9 @@ const Newadmisison = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-
-      console.log(studentData, "studentData");
-      // if (resp.ok) {
-      // console.log(resp, "resp.body");
-      // setStudentData("");
-      // studentData.studentName = "";
-      // }
+      if (resp.ok) {
+        router.push("/allstudents");
+      }
     } catch (err) {
       console.log(err);
     }

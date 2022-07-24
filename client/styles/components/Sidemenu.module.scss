@@ -4,9 +4,12 @@
   }
   &_list {
     li {
-      @apply text-gray-400 py-3 pl-2 ml-2 text-sm;
+      @apply text-gray-400 ml-2 text-sm;
       &.active {
         @apply border-r;
+      }
+      a {
+        @apply py-3 pl-2 block;
       }
       &:hover,
       &.active {
