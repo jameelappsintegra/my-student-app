@@ -15,7 +15,7 @@ mongoose
 
 app.get("/add-student", (req, res) => {
   const student = new Student({
-    name: "John",
+    name: "Kennady",
     dateOfBirth: "14-01-1986",
     admissionDate: "04-01-2009",
     fatherName: "Einstin",
