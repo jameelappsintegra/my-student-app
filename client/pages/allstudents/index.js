@@ -1,4 +1,6 @@
+import { id } from "calendar-reactjs";
 import dayjs from "dayjs";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import Layout from "../../components/layout/layout";
 
@@ -35,7 +37,9 @@ const Allstudents = () => {
         <thead>
           <tr>
             <th className="border border-slate-600">Name</th>
+            <th className="border border-slate-600">DOB</th>
             <th className="border border-slate-600">Father</th>
+            <th className="border border-slate-600">Mother</th>
             <th className="border border-slate-600">Addmission</th>
             <th className="border border-slate-600" colSpan={2}>
               Option
@@ -45,8 +49,14 @@ const Allstudents = () => {
         <tbody>
           {allStudent.map((data, index) => (
             <tr key={data._id}>
-              <td className="border border-slate-700">{data.studentName}</td>
+              <td className="border border-slate-700">
+                <Link href={"/allstudents/" + data._id}>
+                  <a>{data.studentName}</a>
+                </Link>
+              </td>
+              <td className="border border-slate-700">{data.dateOfBirth}</td>
               <td className="border border-slate-700">{data.fatherName}</td>
+              <td className="border border-slate-700">{data.motherName}</td>
               <td className="border border-slate-700">
                 {dayjs(data.admissionDate).format("DD/MM/YYYY")}
               </td>
