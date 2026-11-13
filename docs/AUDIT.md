@@ -107,9 +107,27 @@ Backend statement coverage is 94%.
 
 **Not testable yet:** roles, permissions, authentication, parent–child access, teacher assignments, attendance, examinations, published results, fees and payments, and cross-school isolation. None of these exist yet; they are on the roadmap below. Image handling is also untested because the app has no uploads.
 
+## 3b. Admin sign-in (password gate)
+
+Added ahead of the first deployment:
+- A `User` model with bcrypt (12 rounds) password hashing, case-insensitive usernames, and 5-strikes-then-15-minute account lockout.
+- Server-side `Session` records that store only a SHA-256 hash of the token, with automatic expiry via a TTL index.
+- An httpOnly, SameSite=Strict (Secure in production) cookie with an 8-hour lifetime.
+- Logout that revokes the session in the database.
+- A per-IP sign-in rate limit, and JSON-only writes for CSRF protection.
+- `requireAuth` on every data route, the frontend session guard and sign-in page with a safe `?next=` redirect, and a sign-out button.
+- Audit log lines for every sign-in, failure and sign-out.
+- `npm run create-admin` to create an admin or reset a password; a reset also revokes that user's sessions.
+
+The web app now proxies `/api/*`, so the browser only ever talks to one origin.
+
+**Tests after this change:** backend 108, frontend 30, e2e 12, all passing. They cover 401 on every protected route, cookie flags, hashed token storage, the generic error message for unknown and wrong users, lockout and unlock, deactivated users losing sessions, logout revocation and replay, expired and forged cookies, CSRF (415), and the login rate limit.
+
+**Still missing:** roles, permissions, password reset by email, and multi-school support.
+
 ## 4. Known gaps (not done in Phase 1)
 
-- **No login or roles yet.** Anyone who can reach the API can read and change admissions and students. Do not expose the API to the internet until Phase 2 ships. Until then, run it locally or behind a private network.
+- **Single admin role.** A sign-in is required (see 3b), but every user can see and change every record until role-based permissions ship.
 - Parent details are embedded on the admission/student records. Phase 3 normalises them into `Parent` and `StudentParent` once parent accounts exist.
 - Classes are a fixed list (LKG–12). Sections are free text. Real `Class`, `Section` and `AcademicYear` records come with Phase 3.
 - No document uploads yet. They need a storage decision (S3, GCS or Atlas GridFS).

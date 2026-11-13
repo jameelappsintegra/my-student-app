@@ -16,7 +16,12 @@ EduPro is a school management app. This repository holds three parts:
 
 Attendance, Parents and Personal Details are placeholders that say they are not available yet.
 
-> ⚠️ **There is no login or permission system yet.** Anyone who can reach the API can read and change admissions and students. Run it only on a private network until authentication ships. See [Known limitations](#known-limitations).
+> 🔐 **Sign-in is required.** Every page and every data endpoint needs an admin session.
+> - Passwords are bcrypt-hashed.
+> - The session cookie is httpOnly and SameSite=Strict, and expires after 8 hours.
+> - Five failed attempts lock the account for 15 minutes, and sign-ins are rate limited per IP.
+>
+> There is only one role (admin) so far; staff, parent and teacher roles come next.
 
 ## Quick start (local development)
 
@@ -28,25 +33,28 @@ cd server
 cp .env.example .env      # set MONGODB_URI; CORS_ORIGIN if the web app is not on :3000
 npm install
 npm run db:maintain       # creates the indexes (run again after each deploy)
+EDUPRO_ADMIN_PASSWORD='at least 12 characters' npm run create-admin -- admin "School Admin"
 npm run dev               # http://localhost:5000/api
 
 # 2. Web app (second terminal)
 cd client
-cp .env.example .env.local   # NEXT_PUBLIC_API_URL, default http://localhost:5000/api
+cp .env.example .env.local   # API_INTERNAL_URL, default http://localhost:5000
 npm install
-npm run dev                  # http://localhost:3000
+npm run dev                  # http://localhost:3000 – sign in as the admin you created
 ```
 
 ## Architecture
 
 ```
-Browser ──► Next.js pages (client/pages)
-               │ services/api.js  (fetch, credentials: include)
+Browser ──► Next.js (client/)  pages + /api/* proxy (same origin, so the cookie is first-party)
+               │
                ▼
            Express app (server/src/app.js)
              pino-http (request id, JSON log) → helmet → CORS allow-list
-             → compression → rate limit → JSON body (100 kB) → sanitize
-             → routes → 404 → central error handler
+             → compression → rate limit → cookie parser → JSON-only writes
+             → JSON body (100 kB) → sanitize
+             → public routes (/health, /ready, /auth/*, /meta/classes)
+             → requireAuth (session lookup) → data routes → 404 → error handler
                │
    routes ─► validators (zod) ─► controllers ─► services ─► models (Mongoose)
                                                                │
@@ -64,11 +72,11 @@ More detail: [docs/API.md](docs/API.md) · [docs/DEPLOYMENT.md](docs/DEPLOYMENT.
 
 | Command | What it covers | Count |
 | --- | --- | --- |
-| `cd server && npm run test:unit` | validators, query helpers, sanitizer, error mapping, env config | 49 |
-| `cd server && npm run test:integration` | API against an in-memory MongoDB replica set: workflow, concurrency, duplicates, injection, limits, CORS, rate limit, index usage | 33 |
-| `cd server && npm test` | both of the above (`npm run test:coverage` for coverage) | 82 |
-| `cd client && npm test` | React components (form validation and submit, admissions actions, dashboard, API client) | 20 |
-| `cd e2e && npm install && npm test` | builds the web app, starts a throwaway database and the API, then runs Playwright on desktop and mobile | 8 |
+| `cd server && npm run test:unit` | validators, query helpers, sanitizer, error mapping, env config, password hashing | 52 |
+| `cd server && npm run test:integration` | API against an in-memory MongoDB replica set: auth (every protected route, lockout, revocation, CSRF, rate limit), workflow, concurrency, duplicates, injection, limits, index usage | 56 |
+| `cd server && npm test` | both of the above (`npm run test:coverage` for coverage) | 108 |
+| `cd client && npm test` | React components (sign-in, session guard, form validation and submit, admissions actions, dashboard, API client) | 30 |
+| `cd e2e && npm install && npm test` | builds the web app, starts a throwaway database, an admin and the API, then runs Playwright on desktop and mobile | 12 |
 
 The server and e2e tests download a MongoDB binary on first run. If your network blocks that, set `MONGOMS_SYSTEM_BINARY=/path/to/mongod` (and `MONGOMS_VERSION` to its version). The e2e suite uses Playwright's Chromium (`npx playwright install chromium`).
 
@@ -76,7 +84,7 @@ CI (`.github/workflows/ci.yml`) runs all of these on every push.
 
 ## Known limitations
 
-- **No authentication, roles or permissions.** These are the next phase (see docs/AUDIT.md §5), and the remaining modules depend on them.
+- **One role only (admin).** Role-based permissions (principal, teacher, parent, accountant…) and password reset by email are the next phase (see docs/AUDIT.md §5), and the remaining modules depend on them. Reset a password with `npm run create-admin`; doing so also signs out that user's sessions.
 - Not built yet: parent and teacher accounts, attendance, exams and results, timetables, fees, notifications, reports, file and document uploads, multi-school tenancy. None of these are tested because they don't exist.
 - Classes are a fixed list (LKG–12). Sections are free text.
 - Parent and guardian details are stored on each admission and student record, not as separate parent records.

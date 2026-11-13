@@ -71,9 +71,9 @@ test("client-side validation blocks an incomplete form", async ({ page }) => {
   expect(posted).toBe(false);
 });
 
-test("duplicate application is refused with a clear message and the form is kept", async ({ page, request }) => {
+test("duplicate application is refused with a clear message and the form is kept", async ({ page }) => {
   const child = uniqueChild();
-  const existing = await seedApplication(request, child);
+  const existing = await seedApplication(page.request, child);
   await page.goto("/newadmission");
   await fillForm(page, child);
   await page.getByRole("button", { name: "Submit application" }).click();
@@ -81,9 +81,9 @@ test("duplicate application is refused with a clear message and the form is kept
   await expect(page.getByLabel("First name *")).toHaveValue(child.firstName);
 });
 
-test("rejecting with a reason closes the application", async ({ page, request }) => {
+test("rejecting with a reason closes the application", async ({ page }) => {
   const child = uniqueChild();
-  const app = await seedApplication(request, child, "under_review");
+  const app = await seedApplication(page.request, child, "under_review");
   await page.goto("/admissions");
   const row = page.locator("tr", { hasText: app.applicationNumber });
   await row.getByRole("button", { name: "Reject" }).click();
@@ -94,10 +94,10 @@ test("rejecting with a reason closes the application", async ({ page, request })
   await expect(row.getByRole("button")).toHaveCount(0);
 });
 
-test("enrolment conflict is shown in the dialog and nothing changes", async ({ page, request }) => {
-  const a = await seedApplication(request, uniqueChild(), "approved");
-  const b = await seedApplication(request, uniqueChild(), "approved");
-  await request.post(`${process.env.E2E_API_URL}/admissions/${a.id}/enroll`, { data: { section: "Z", rollNumber: 1 } });
+test("enrolment conflict is shown in the dialog and nothing changes", async ({ page }) => {
+  const a = await seedApplication(page.request, uniqueChild(), "approved");
+  const b = await seedApplication(page.request, uniqueChild(), "approved");
+  await page.request.post(`/api/admissions/${a.id}/enroll`, { data: { section: "Z", rollNumber: 1 } });
 
   await page.goto("/admissions?");
   await page.getByLabel("Filter by status").selectOption("approved");

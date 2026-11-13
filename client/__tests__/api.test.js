@@ -9,7 +9,7 @@ test("sends JSON with credentials and drops empty query params", async () => {
   global.fetch = jest.fn(() => reply(200, { success: true, data: [] }));
   await api.students.list({ page: 2, search: "", className: undefined, section: "A" });
   const [url, opts] = fetch.mock.calls[0];
-  expect(url).toBe("http://localhost:5000/api/students?page=2&section=A");
+  expect(url).toBe("/api/students?page=2&section=A");
   expect(opts.credentials).toBe("include");
 
   await api.admissions.create({ firstName: "A" });
@@ -31,6 +31,19 @@ test("turns server errors into ApiError with field errors", async () => {
   expect(err).toBeInstanceOf(ApiError);
   expect(err.status).toBe(400);
   expect(err.fieldErrors()).toEqual({ "father.phone": "Enter a valid phone number" });
+});
+
+test("a 401 on a data call sends the user to sign in", async () => {
+  delete window.location;
+  window.location = { assign: jest.fn(), pathname: "/myclass", search: "?className=2" };
+  global.fetch = jest.fn(() => reply(401, { success: false, message: "Please sign in to continue." }));
+  await expect(api.students.list()).rejects.toThrow("Please sign in");
+  expect(window.location.assign).toHaveBeenCalledWith("/login?next=%2Fmyclass%3FclassName%3D2");
+
+  // Failed sign-in attempts do not redirect.
+  window.location.assign.mockClear();
+  await expect(api.auth.login("a", "b")).rejects.toThrow();
+  expect(window.location.assign).not.toHaveBeenCalled();
 });
 
 test("explains network failures and non-JSON responses", async () => {

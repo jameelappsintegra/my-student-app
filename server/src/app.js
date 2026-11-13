@@ -3,14 +3,17 @@ const express = require("express");
 const helmet = require("helmet");
 const cors = require("cors");
 const compression = require("compression");
+const cookieParser = require("cookie-parser");
 const rateLimit = require("express-rate-limit");
 const pinoHttp = require("pino-http");
 const { corsOrigins, trustProxy, rateLimitMax } = require("./config/env");
 const logger = require("./config/logger");
 const sanitize = require("./middleware/sanitize");
+const { requireJsonForWrites } = require("./middleware/auth");
 const { notFound, errorHandler } = require("./middleware/errorHandler");
 
-function createApp() {
+// options.rateLimit / options.loginLimit override the env values (tests).
+function createApp(options = {}) {
   const app = express();
 
   app.disable("x-powered-by");
@@ -53,17 +56,19 @@ function createApp() {
     "/api",
     rateLimit({
       windowMs: 15 * 60 * 1000,
-      limit: rateLimitMax,
+      limit: options.rateLimit ?? rateLimitMax,
       standardHeaders: "draft-7",
       legacyHeaders: false,
       skip: (req) => req.path === "/health" || req.path === "/ready",
       message: { success: false, message: "Too many requests, slow down." },
     })
   );
+  app.use(cookieParser());
+  app.use("/api", requireJsonForWrites);
   app.use(express.json({ limit: "100kb" }));
   app.use(sanitize);
 
-  app.use("/api", require("./routes"));
+  app.use("/api", require("./routes")({ loginLimit: options.loginLimit }));
 
   app.use(notFound);
   app.use(errorHandler);

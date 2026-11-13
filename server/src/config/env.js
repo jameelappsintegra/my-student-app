@@ -14,6 +14,10 @@ const schema = z.object({
   TRUST_PROXY: z.coerce.number().int().min(0).default(0),
   RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(300),
   SHUTDOWN_TIMEOUT_MS: z.coerce.number().int().min(1000).default(10000),
+  SESSION_HOURS: z.coerce.number().min(0.01).max(168).default(8),
+  // Secure cookies need HTTPS; defaults on in production.
+  COOKIE_SECURE: z.enum(["true", "false"]).optional(),
+  LOGIN_RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(10),
 });
 
 const parsed = schema.safeParse(process.env);
@@ -47,6 +51,11 @@ module.exports = {
   trustProxy: env.TRUST_PROXY,
   rateLimitMax: env.RATE_LIMIT_MAX,
   shutdownTimeoutMs: env.SHUTDOWN_TIMEOUT_MS,
+  sessionHours: env.SESSION_HOURS,
+  cookieSecure: env.COOKIE_SECURE
+    ? env.COOKIE_SECURE === "true"
+    : env.NODE_ENV === "production",
+  loginRateLimitMax: env.LOGIN_RATE_LIMIT_MAX,
   corsOrigins,
   // Read lazily so tests can inject an in-memory database URI.
   getMongoUri: () => {

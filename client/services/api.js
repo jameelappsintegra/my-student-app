@@ -1,6 +1,6 @@
-const BASE_URL = (
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
-).replace(/\/$/, "");
+// Same-origin by default: Next.js proxies /api/* to the API server (see
+// next.config.js), so the session cookie stays first-party.
+const BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "/api").replace(/\/$/, "");
 
 export class ApiError extends Error {
   constructor(message, { status, errors } = {}) {
@@ -40,6 +40,11 @@ async function request(method, path, { body, params } = {}) {
   }
 
   const json = await res.json().catch(() => null);
+  if (res.status === 401 && !path.startsWith("/auth/") && typeof window !== "undefined") {
+    // Session expired or missing: send the user to sign in, then back here.
+    const next = encodeURIComponent(window.location.pathname + window.location.search);
+    window.location.assign(`/login?next=${next}`);
+  }
   if (!res.ok || !json?.success) {
     throw new ApiError(json?.message || `Request failed (${res.status})`, {
       status: res.status,
@@ -50,6 +55,12 @@ async function request(method, path, { body, params } = {}) {
 }
 
 export const api = {
+  auth: {
+    me: () => request("GET", "/auth/me"),
+    login: (username, password) =>
+      request("POST", "/auth/login", { body: { username, password } }),
+    logout: () => request("POST", "/auth/logout", { body: {} }),
+  },
   dashboard: () => request("GET", "/dashboard"),
   admissions: {
     list: (params) => request("GET", "/admissions", { params }),

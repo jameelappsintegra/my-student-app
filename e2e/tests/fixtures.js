@@ -1,6 +1,9 @@
 const base = require("@playwright/test");
 
-const API = process.env.E2E_API_URL || "http://localhost:5055/api";
+const ADMIN = {
+  username: process.env.E2E_ADMIN_USERNAME || "e2e-admin",
+  password: process.env.E2E_ADMIN_PASSWORD || "e2e-password-only-for-tests",
+};
 let counter = 0;
 
 // Unique child per test so duplicate detection never couples tests.
@@ -11,8 +14,10 @@ function uniqueChild() {
   return { firstName: `Kid${tag}`, lastName: "Tester", dobInput: `${day}/03/2018`, dobIso: `2018-03-${day}` };
 }
 
+// `request` is page.request, so calls go through the web origin's /api proxy
+// and carry the signed-in session cookie.
 async function api(request, method, path, data) {
-  const res = await request.fetch(`${API}${path}`, { method, data });
+  const res = await request.fetch(`/api${path}`, { method, data });
   const body = await res.json();
   if (!res.ok()) throw new Error(`${method} ${path}: ${res.status()} ${body.message}`);
   return body.data;
@@ -38,14 +43,20 @@ async function seedApplication(request, child, status = "submitted") {
 const test = base.test.extend({
   // Console messages a specific test expects, e.g. a request it aborts.
   allowConsole: [[], { option: true }],
+  // Tests start signed in unless they opt out.
+  signedIn: [true, { option: true }],
   // Fails any test that logs an unexpected browser error.
-  page: async ({ page, allowConsole }, use) => {
+  page: async ({ page, allowConsole, signedIn }, use) => {
+    if (signedIn) {
+      const res = await page.request.post("/api/auth/login", { data: ADMIN });
+      base.expect(res.ok(), "sign in for test").toBe(true);
+    }
     const problems = [];
     page.on("pageerror", (e) => problems.push(`pageerror: ${e.message}`));
     page.on("console", (m) => {
       if (m.type() !== "error") return;
       // Expected: the browser logs 4xx responses the UI handles itself.
-      if (/status of (400|409|404)/.test(m.text())) return;
+      if (/status of (400|401|409|404)/.test(m.text())) return;
       if (allowConsole.some((rx) => rx.test(m.text()))) return;
       problems.push(m.text());
     });
@@ -54,4 +65,4 @@ const test = base.test.extend({
   },
 });
 
-module.exports = { test, expect: base.expect, uniqueChild, seedApplication, api };
+module.exports = { test, expect: base.expect, uniqueChild, seedApplication, api, ADMIN };

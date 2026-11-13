@@ -1,6 +1,6 @@
 # Deploying EduPro
 
-> **Do not expose EduPro to the public internet until authentication ships.** Today the API has no login. Deploy it behind a VPN, private network or an authenticating proxy (for example Cloudflare Access or an identity-aware proxy) so only school staff can reach it.
+> EduPro requires sign-in, but it has a single admin role so far. Every signed-in user can see and change every record. Give accounts only to staff who should have full access, until role-based permissions ship.
 
 ## 1. Components
 
@@ -24,8 +24,11 @@ API (validated at start-up; an invalid value stops the process with a clear mess
 | `LOG_LEVEL` | no | `info` in prod | |
 | `RATE_LIMIT_MAX` | no | `300` | Per IP per 15 minutes. With several instances, each counts separately (in-memory store). |
 | `SHUTDOWN_TIMEOUT_MS` | no | `10000` | Keep below your orchestrator's kill grace period |
+| `SESSION_HOURS` | no | `8` | Session lifetime |
+| `COOKIE_SECURE` | no | `true` in production | Leave on. Turn off only for plain-HTTP previews. |
+| `LOGIN_RATE_LIMIT_MAX` | no | `10` | Failed sign-ins per IP per 15 minutes |
 
-Web: `NEXT_PUBLIC_API_URL=https://api.your-school.example/api`. It is inlined at build time, so rebuild when it changes. Never put secrets in `NEXT_PUBLIC_*`.
+Web: `API_INTERNAL_URL=http://<api-host>:5000` is the address the Next.js server proxies `/api/*` to. It is read at **build** time, so rebuild when it changes. Browsers only ever talk to the web origin, which keeps the session cookie first-party, so the API does not need to be public. Never put secrets in `NEXT_PUBLIC_*`.
 
 Keep secrets in your platform's secret store, not in files in the repo. `.env` files are git-ignored.
 
@@ -35,10 +38,11 @@ Keep secrets in your platform's secret store, not in files in the repo. `.env` f
 # API
 cd server && npm ci --omit=dev
 npm run db:maintain          # sync indexes, backfill search tokens; safe to re-run
+EDUPRO_ADMIN_PASSWORD='…' npm run create-admin -- admin "School Admin"   # first deploy only
 NODE_ENV=production node src/server.js
 
 # Web
-cd client && npm ci && NEXT_PUBLIC_API_URL=… npm run build && npm start
+cd client && npm ci && API_INTERNAL_URL=http://<api-host>:5000 npm run build && npm start
 ```
 
 Run `db:maintain` once per release, before starting new API instances. It builds the unique indexes that enforce duplicate and roll-number rules.
@@ -88,6 +92,7 @@ There are no uploads yet. When document upload is added it should:
 - [ ] The database user has least privilege (`readWrite` on one database)
 - [ ] `CORS_ORIGIN` is the exact production web origin
 - [ ] HTTPS everywhere; `TRUST_PROXY` set correctly
-- [ ] Access restricted to staff (VPN or authenticating proxy) **until app authentication ships**
+- [ ] Admin accounts created with strong, unique passwords (12+ characters), only for staff who need full access
+- [ ] `COOKIE_SECURE` is on (the default in production)
 - [ ] Backups enabled and a restore tested
 - [ ] Log shipping and alerts configured

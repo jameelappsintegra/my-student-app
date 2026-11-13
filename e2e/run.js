@@ -10,6 +10,8 @@ const ROOT = path.resolve(__dirname, "..");
 const API_PORT = process.env.E2E_API_PORT || "5055";
 const WEB_PORT = process.env.E2E_WEB_PORT || "3055";
 const API_URL = `http://localhost:${API_PORT}/api`;
+// Throwaway credentials for the throwaway test database.
+const E2E_ADMIN = { username: "e2e-admin", password: "e2e-password-only-for-tests" };
 const WEB_URL = `http://localhost:${WEB_PORT}`;
 const children = [];
 
@@ -65,10 +67,18 @@ async function assertPortFree(url) {
   try {
     await assertPortFree(WEB_URL);
     await assertPortFree(`http://localhost:${API_PORT}`);
+    const mongoUri = replSet.getUri("edupro_e2e");
+    const admin = spawnSync("node", ["scripts/create-admin.js", E2E_ADMIN.username, "E2E Admin"], {
+      cwd: path.join(ROOT, "server"),
+      env: { ...process.env, MONGODB_URI: mongoUri, EDUPRO_ADMIN_PASSWORD: E2E_ADMIN.password },
+      stdio: "inherit",
+    });
+    if (admin.status !== 0) throw new Error("create-admin failed");
+
     console.log("Building web app…");
     const build = spawnSync("node", [NEXT_BIN, "build"], {
       cwd: path.join(ROOT, "client"),
-      env: { ...process.env, NEXT_PUBLIC_API_URL: API_URL, NEXT_TELEMETRY_DISABLED: "1" },
+      env: { ...process.env, API_INTERNAL_URL: `http://localhost:${API_PORT}`, NEXT_TELEMETRY_DISABLED: "1" },
       stdio: "inherit",
     });
     if (build.status !== 0) throw new Error("next build failed");
@@ -76,8 +86,12 @@ async function assertPortFree(url) {
     start("node", ["src/server.js"], path.join(ROOT, "server"), {
       NODE_ENV: "production",
       PORT: API_PORT,
-      MONGODB_URI: replSet.getUri("edupro_e2e"),
+      MONGODB_URI: mongoUri,
       CORS_ORIGIN: WEB_URL,
+      // Plain http://localhost in tests; production keeps Secure cookies.
+      COOKIE_SECURE: "false",
+      TRUST_PROXY: "1",
+      LOGIN_RATE_LIMIT_MAX: "1000",
       LOG_LEVEL: "warn",
       RATE_LIMIT_MAX: "10000",
     });
@@ -86,7 +100,12 @@ async function assertPortFree(url) {
 
     const run = spawnSync("npx", ["playwright", "test", ...process.argv.slice(2)], {
       cwd: __dirname,
-      env: { ...process.env, E2E_WEB_URL: WEB_URL, E2E_API_URL: API_URL },
+      env: {
+        ...process.env,
+        E2E_WEB_URL: WEB_URL,
+        E2E_ADMIN_USERNAME: E2E_ADMIN.username,
+        E2E_ADMIN_PASSWORD: E2E_ADMIN.password,
+      },
       stdio: "inherit",
     });
     code = run.status ?? 1;

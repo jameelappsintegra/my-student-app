@@ -2,7 +2,7 @@
 
 Base URL: `http://<host>:<PORT>/api`. All bodies are JSON, with a 100 kB limit.
 
-> No authentication yet. Every endpoint is open. See README → Known limitations.
+> Every endpoint except `/health`, `/ready`, `/meta/classes` and `/auth/login` requires a signed-in session and returns **401** without one.
 
 ## Conventions
 
@@ -30,6 +30,16 @@ Base URL: `http://<host>:<PORT>/api`. All bodies are JSON, with a 100 kB limit.
 - Every response carries an `X-Request-Id` header (or echoes a valid incoming one). Quote it when reporting a problem.
 - List endpoints take `page` (≥1), `limit` (1–100, default 10), `search` and `sort`.
   - `search` matches word prefixes of first, middle and last names and the record number, case-insensitively. Every word must match: `mary le` finds "Mary Ann Lee".
+
+## Authentication
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| POST | `/auth/login` | `{ username, password }` → 200 with `{ user, expiresAt }` and an `edupro_session` cookie. Wrong credentials → 401 with one generic message. 5 failures → account locked for 15 min. 10 failed attempts per IP per 15 min → 429. |
+| POST | `/auth/logout` | Deletes the session server-side and clears the cookie |
+| GET | `/auth/me` | `{ user, expiresAt }` for the current session |
+
+The cookie is `HttpOnly; SameSite=Strict; Path=/`, plus `Secure` in production. It expires after `SESSION_HOURS` (default 8). Only a SHA-256 hash of the token is stored, and expired sessions are removed automatically. `POST`, `PUT` and `PATCH` must use `Content-Type: application/json` (otherwise 415), which together with SameSite=Strict blocks cross-site request forgery. Call the API through the web app's `/api` proxy so the cookie is first-party.
 
 ## Health
 

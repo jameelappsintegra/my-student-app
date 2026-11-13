@@ -9,10 +9,13 @@
     "test": "NODE_ENV=test jest --runInBand",
     "test:unit": "NODE_ENV=test jest --runInBand tests/unit",
     "test:integration": "NODE_ENV=test jest --runInBand tests/integration",
-    "test:coverage": "NODE_ENV=test jest --runInBand --coverage"
+    "test:coverage": "NODE_ENV=test jest --runInBand --coverage",
+    "create-admin": "node scripts/create-admin.js"
   },
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "compression": "^1.8.2",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^8.6.0",
     "express": "^4.17.1",
