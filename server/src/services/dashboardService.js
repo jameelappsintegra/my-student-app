@@ -1,6 +1,7 @@
 const Student = require("../models/Student");
 const Admission = require("../models/Admission");
 const { PENDING_ADMISSION_STATUSES } = require("../constants");
+const { toPublic } = require("../utils/serialize");
 
 async function getSummary() {
   const [
@@ -20,7 +21,8 @@ async function getSummary() {
     Admission.find()
       .select("applicationNumber firstName lastName classApplied status createdAt")
       .sort({ createdAt: -1 })
-      .limit(5),
+      .limit(5)
+      .lean(),
   ]);
 
   return {
@@ -31,7 +33,7 @@ async function getSummary() {
       className: r._id,
       count: r.count,
     })),
-    recentAdmissions,
+    recentAdmissions: recentAdmissions.map(toPublic),
   };
 }
 

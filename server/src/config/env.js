@@ -1,26 +1,61 @@
 require("dotenv").config();
+const { z } = require("zod");
 
-const NODE_ENV = process.env.NODE_ENV || "development";
+// Validated once at start-up so misconfiguration fails fast and clearly.
+const schema = z.object({
+  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  PORT: z.coerce.number().int().min(1).max(65535).default(5000),
+  MONGODB_URI: z.string().optional(),
+  CORS_ORIGIN: z.string().default("http://localhost:3000"),
+  LOG_LEVEL: z
+    .enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"])
+    .optional(),
+  // Number of reverse proxies in front of the API (for correct client IPs).
+  TRUST_PROXY: z.coerce.number().int().min(0).default(0),
+  RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(300),
+  SHUTDOWN_TIMEOUT_MS: z.coerce.number().int().min(1000).default(10000),
+});
 
-function required(name) {
-  const value = process.env[name];
-  if (!value) {
+const parsed = schema.safeParse(process.env);
+if (!parsed.success) {
+  const details = parsed.error.issues
+    .map((i) => `  ${i.path.join(".")}: ${i.message}`)
+    .join("\n");
+  throw new Error(`Invalid environment configuration:\n${details}`);
+}
+const env = parsed.data;
+
+const corsOrigins = env.CORS_ORIGIN.split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+for (const origin of corsOrigins) {
+  if (!/^https?:\/\/[^/]+$/.test(origin)) {
     throw new Error(
-      `Missing required environment variable ${name}. Copy server/.env.example to server/.env and set it.`
+      `Invalid CORS_ORIGIN entry "${origin}": use scheme://host[:port] with no path`
     );
   }
-  return value;
 }
 
 module.exports = {
-  NODE_ENV,
-  isProduction: NODE_ENV === "production",
-  isTest: NODE_ENV === "test",
-  port: Number(process.env.PORT) || 5000,
+  NODE_ENV: env.NODE_ENV,
+  isProduction: env.NODE_ENV === "production",
+  isTest: env.NODE_ENV === "test",
+  port: env.PORT,
+  logLevel:
+    env.LOG_LEVEL ||
+    (env.NODE_ENV === "test" ? "silent" : env.NODE_ENV === "production" ? "info" : "debug"),
+  trustProxy: env.TRUST_PROXY,
+  rateLimitMax: env.RATE_LIMIT_MAX,
+  shutdownTimeoutMs: env.SHUTDOWN_TIMEOUT_MS,
+  corsOrigins,
   // Read lazily so tests can inject an in-memory database URI.
-  getMongoUri: () => required("MONGODB_URI"),
-  corsOrigins: (process.env.CORS_ORIGIN || "http://localhost:3000")
-    .split(",")
-    .map((o) => o.trim())
-    .filter(Boolean),
+  getMongoUri: () => {
+    const uri = process.env.MONGODB_URI;
+    if (!uri) {
+      throw new Error(
+        "Missing required environment variable MONGODB_URI. Copy server/.env.example to server/.env and set it."
+      );
+    }
+    return uri;
+  },
 };

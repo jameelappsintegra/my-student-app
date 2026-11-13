@@ -6,7 +6,14 @@ function cleanTransform(_doc, ret) {
   delete ret.dedupeKey;
   delete ret.isActiveApplication;
   delete ret.deletedAt;
+  delete ret.searchTokens;
   return ret;
 }
 
-module.exports = { cleanTransform };
+// Same shape for .lean() results, which skip toJSON transforms.
+function toPublic(doc) {
+  const out = { ...doc };
+  return cleanTransform(null, out);
+}
+
+module.exports = { cleanTransform, toPublic };

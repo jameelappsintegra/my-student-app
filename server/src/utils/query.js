@@ -13,4 +13,13 @@ function parseSort(sort) {
   return { [desc ? sort.slice(1) : sort]: desc ? -1 : 1 };
 }
 
-module.exports = { escapeRegex, buildPagination, parseSort };
+// "Aisha Rah" -> every word must prefix-match one of the search tokens.
+function searchFilter(search) {
+  const words = search.toLowerCase().split(/\s+/).filter(Boolean).slice(0, 5);
+  if (!words.length) return {};
+  return {
+    searchTokens: { $all: words.map((w) => new RegExp(`^${escapeRegex(w)}`)) },
+  };
+}
+
+module.exports = { escapeRegex, buildPagination, parseSort, searchFilter };

@@ -55,4 +55,14 @@ function buildDedupeKey({ firstName, lastName, dateOfBirth }) {
     .toLowerCase()}|${dob}`;
 }
 
-module.exports = { personalFields, buildDedupeKey };
+// Lower-cased name parts and record number, indexed for prefix search.
+// A case-sensitive anchored regex (/^ais/) on this array can use the index,
+// unlike a case-insensitive regex over the raw name fields.
+function buildSearchTokens(doc, numberField) {
+  return [doc.firstName, doc.middleName, doc.lastName, doc[numberField]]
+    .filter(Boolean)
+    .flatMap((v) => v.toLowerCase().split(/\s+/))
+    .filter(Boolean);
+}
+
+module.exports = { personalFields, buildDedupeKey, buildSearchTokens };

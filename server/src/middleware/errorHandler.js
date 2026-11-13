@@ -1,13 +1,12 @@
 const mongoose = require("mongoose");
 const ApiError = require("../utils/ApiError");
-const { isTest } = require("../config/env");
 
 function notFound(req, _res, next) {
   next(ApiError.notFound(`Route ${req.method} ${req.path} not found`));
 }
 
 // eslint-disable-next-line no-unused-vars
-function errorHandler(err, _req, res, _next) {
+function errorHandler(err, req, res, _next) {
   let status = err.statusCode || 500;
   let message = err.message;
   let errors = err.errors;
@@ -23,9 +22,15 @@ function errorHandler(err, _req, res, _next) {
       field: e.path,
       message: e.message,
     }));
+  } else if (err instanceof mongoose.Error.VersionError) {
+    status = 409;
+    message = "This record was changed by someone else. Reload and try again.";
+    errors = undefined;
   } else if (err.code === 11000) {
     status = 409;
-    message = "A record with these details already exists";
+    message = err.keyPattern?.rollNumber
+      ? "That roll number is already used in this section"
+      : "A record with these details already exists";
     errors = undefined;
   } else if (err.type === "entity.parse.failed") {
     status = 400;
@@ -36,7 +41,8 @@ function errorHandler(err, _req, res, _next) {
   }
 
   if (status >= 500) {
-    if (!isTest) console.error(err);
+    // pino-http logs the failed request; attach the error to it.
+    if (req.log) req.log.error({ err }, "Unhandled error");
     // Never leak internals (stack traces, driver messages) to clients.
     message = "Something went wrong. Please try again.";
     errors = undefined;

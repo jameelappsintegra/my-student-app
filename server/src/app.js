@@ -1,8 +1,12 @@
+const crypto = require("crypto");
 const express = require("express");
 const helmet = require("helmet");
 const cors = require("cors");
+const compression = require("compression");
 const rateLimit = require("express-rate-limit");
-const { corsOrigins, isProduction, isTest } = require("./config/env");
+const pinoHttp = require("pino-http");
+const { corsOrigins, trustProxy, rateLimitMax } = require("./config/env");
+const logger = require("./config/logger");
 const sanitize = require("./middleware/sanitize");
 const { notFound, errorHandler } = require("./middleware/errorHandler");
 
@@ -10,9 +14,30 @@ function createApp() {
   const app = express();
 
   app.disable("x-powered-by");
-  if (isProduction) app.set("trust proxy", 1);
+  app.set("trust proxy", trustProxy);
 
   // Middleware runs in registration order, so it must come before routes.
+  app.use(
+    pinoHttp({
+      logger,
+      genReqId: (req, res) => {
+        const incoming = req.headers["x-request-id"];
+        const id =
+          typeof incoming === "string" && /^[\w-]{1,64}$/.test(incoming)
+            ? incoming
+            : crypto.randomUUID();
+        res.setHeader("X-Request-Id", id);
+        return id;
+      },
+      customLogLevel: (_req, res, err) =>
+        err || res.statusCode >= 500 ? "error" : res.statusCode >= 400 ? "warn" : "info",
+      autoLogging: { ignore: (req) => req.url === "/api/health" },
+      serializers: {
+        req: (req) => ({ id: req.id, method: req.method, url: req.url }),
+        res: (res) => ({ statusCode: res.statusCode }),
+      },
+    })
+  );
   app.use(helmet());
   app.use(
     cors({
@@ -20,26 +45,23 @@ function createApp() {
         // Allow non-browser clients (no Origin header) and listed origins.
         cb(null, !origin || corsOrigins.includes(origin)),
       credentials: true,
+      exposedHeaders: ["X-Request-Id"],
     })
   );
+  app.use(compression());
   app.use(
     "/api",
     rateLimit({
       windowMs: 15 * 60 * 1000,
-      limit: isTest ? 10000 : 300,
+      limit: rateLimitMax,
       standardHeaders: "draft-7",
       legacyHeaders: false,
+      skip: (req) => req.path === "/health" || req.path === "/ready",
       message: { success: false, message: "Too many requests, slow down." },
     })
   );
   app.use(express.json({ limit: "100kb" }));
   app.use(sanitize);
-  if (!isProduction && !isTest) {
-    app.use((req, _res, next) => {
-      console.log(`${req.method} ${req.originalUrl}`);
-      next();
-    });
-  }
 
   app.use("/api", require("./routes"));
 

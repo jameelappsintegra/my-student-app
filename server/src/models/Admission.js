@@ -1,6 +1,10 @@
 const mongoose = require("mongoose");
 const { CLASS_CODES, ADMISSION_STATUSES } = require("../constants");
-const { personalFields, buildDedupeKey } = require("./common");
+const {
+  personalFields,
+  buildDedupeKey,
+  buildSearchTokens,
+} = require("./common");
 const { cleanTransform } = require("../utils/serialize");
 
 const statusHistorySchema = new mongoose.Schema(
@@ -22,6 +26,7 @@ const admissionSchema = new mongoose.Schema(
     statusHistory: [statusHistorySchema],
     student: { type: mongoose.Schema.Types.ObjectId, ref: "Student" },
     dedupeKey: { type: String, required: true },
+    searchTokens: { type: [String], default: undefined },
     // false once rejected, so the same child may re-apply later.
     isActiveApplication: { type: Boolean, default: true },
   },
@@ -34,11 +39,14 @@ admissionSchema.index(
   { unique: true, partialFilterExpression: { isActiveApplication: true } }
 );
 admissionSchema.index({ status: 1, createdAt: -1 });
+admissionSchema.index({ createdAt: -1 });
+admissionSchema.index({ searchTokens: 1 });
 
 admissionSchema.pre("validate", function setDedupeKey(next) {
   if (this.firstName && this.lastName && this.dateOfBirth) {
     this.dedupeKey = buildDedupeKey(this);
   }
+  this.searchTokens = buildSearchTokens(this, "applicationNumber");
   next();
 });
 

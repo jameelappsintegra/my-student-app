@@ -4,7 +4,8 @@ const Student = require("../models/Student");
 const Counter = require("../models/Counter");
 const { buildDedupeKey } = require("../models/common");
 const ApiError = require("../utils/ApiError");
-const { escapeRegex, buildPagination, parseSort } = require("../utils/query");
+const { buildPagination, parseSort, searchFilter } = require("../utils/query");
+const { toPublic } = require("../utils/serialize");
 const { ADMISSION_TRANSITIONS } = require("../constants");
 
 const pad = (n) => String(n).padStart(5, "0");
@@ -63,14 +64,7 @@ async function listAdmissions(q) {
   if (q.status) filter.status = q.status;
   if (q.classApplied) filter.classApplied = q.classApplied;
   if (q.academicYear) filter.academicYear = q.academicYear;
-  if (q.search) {
-    const rx = new RegExp(escapeRegex(q.search), "i");
-    filter.$or = [
-      { firstName: rx },
-      { lastName: rx },
-      { applicationNumber: rx },
-    ];
-  }
+  if (q.search) Object.assign(filter, searchFilter(q.search));
 
   const [items, total] = await Promise.all([
     Admission.find(filter)
@@ -79,10 +73,14 @@ async function listAdmissions(q) {
       )
       .sort(parseSort(q.sort))
       .skip((q.page - 1) * q.limit)
-      .limit(q.limit),
+      .limit(q.limit)
+      .lean(),
     Admission.countDocuments(filter),
   ]);
-  return { items, pagination: buildPagination(q.page, q.limit, total) };
+  return {
+    items: items.map(toPublic),
+    pagination: buildPagination(q.page, q.limit, total),
+  };
 }
 
 async function getAdmission(id) {

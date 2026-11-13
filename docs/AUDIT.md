@@ -61,6 +61,52 @@ Audit date: 13 Nov 2026, against commit `c9d8920` (`main`).
 - Attendance, Parents and Personal Details now show an honest "not available yet" state, marked "Soon" in the menu, instead of fake data.
 - All demo content, Flowbite text, lorem images and unused dependencies removed. `next lint` and `next build` pass with no warnings.
 
+## 3a. Testing and hardening pass
+
+**Test suites, all passing:**
+
+| Suite | Tests |
+| --- | --- |
+| Backend unit | 49 |
+| API integration | 33 |
+| Frontend components | 20 |
+| Playwright end-to-end (desktop and mobile) | 8 |
+
+Backend statement coverage is 94%.
+
+**What the tests cover:**
+- The full admission workflow and every status transition.
+- Concurrency: 8 identical simultaneous applications produce exactly 1; 5 simultaneous enrolments of one application produce 1 student; parallel enrolments get unique, gap-free admission numbers; a failed enrolment rolls back completely (counter included); stale concurrent edits get a 409.
+- Duplicates and roll-number uniqueness.
+- Hostile and invalid input: operator injection, regex metacharacters, oversized and malformed bodies, invalid ids, pagination bounds.
+- Restricted fields never appear in responses.
+- Security headers, CORS rejection, request ids, rate limiting.
+- Checks that list and search queries use indexes rather than collection scans.
+
+**Bugs found and fixed during this pass:**
+- Form labels were not linked to their inputs, which broke screen readers and click-to-focus.
+- Invalid configuration crashed with a stack trace instead of a clear message.
+- The e2e runner left the web server running between runs.
+- Two copies of `@testing-library/dom` caused hundreds of React `act()` warnings. Four remain, coming from inside `react-datepicker`.
+
+**Optimization:**
+- Search used case-insensitive regexes that could not use an index, so every search scanned the collection. Search now uses indexed, lower-cased `searchTokens` with anchored prefix matching.
+- Compound indexes for every list and sort the UI uses.
+- `.lean()` for list queries.
+- gzip compression.
+
+**Operations:**
+- pino structured logging with request ids and redaction.
+- `/health` (liveness) and `/ready` (readiness) endpoints.
+- Graceful shutdown with a timeout.
+- Validated environment configuration.
+- `npm run db:maintain` to sync indexes and backfill search tokens.
+- Security headers on the web app.
+- CI workflow.
+- Deployment, backup and file-storage guidance in docs/DEPLOYMENT.md.
+
+**Not testable yet:** roles, permissions, authentication, parent–child access, teacher assignments, attendance, examinations, published results, fees and payments, and cross-school isolation. None of these exist yet; they are on the roadmap below. Image handling is also untested because the app has no uploads.
+
 ## 4. Known gaps (not done in Phase 1)
 
 - **No login or roles yet.** Anyone who can reach the API can read and change admissions and students. Do not expose the API to the internet until Phase 2 ships. Until then, run it locally or behind a private network.

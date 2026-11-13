@@ -76,10 +76,12 @@ function validate(f) {
   return e;
 }
 
+// The label is linked to the child control's id for screen readers.
 function Field({ label, error, required, children, className = "" }) {
+  const id = children.props.id;
   return (
     <div className={`form-control w-full ${className}`}>
-      <label className="label">
+      <label className="label" htmlFor={id}>
         <span className="label-text font-medium">
           {label}
           {required && <span className="text-error"> *</span>}
@@ -87,7 +89,7 @@ function Field({ label, error, required, children, className = "" }) {
       </label>
       {children}
       {error && (
-        <span className="text-error text-xs mt-1" role="alert">
+        <span className="text-error text-xs mt-1" role="alert" id={`${id}-error`}>
           {error}
         </span>
       )}
@@ -124,6 +126,7 @@ const NewAdmission = () => {
       value,
       onChange: (e) => set(path, e.target.value),
       "aria-invalid": errors[path] ? true : undefined,
+      "aria-describedby": errors[path] ? `${path}-error` : undefined,
       className: `input input-bordered w-full ${
         errors[path] ? "input-error" : ""
       }`,
