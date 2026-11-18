@@ -46,7 +46,7 @@ describe("concurrency", () => {
     results.forEach((r) => expect(r.status).toBe(201));
     const numbers = results.map((r) => r.body.data.student.admissionNumber).sort();
     expect(numbers).toEqual(
-      Array.from({ length: 6 }, (_, i) => `ADM-2026-${String(i + 1).padStart(5, "0")}`)
+      Array.from({ length: 6 }, (_, i) => `TS-2026-${String(i + 1).padStart(5, "0")}`)
     );
   });
 
@@ -61,7 +61,7 @@ describe("concurrency", () => {
     expect(await Student.countDocuments()).toBe(1);
     // The admission-number counter rolled back too, so the next number is 2.
     const ok = await agent.post(`/api/admissions/${id}/enroll`).send({ section: "A", rollNumber: 2 });
-    expect(ok.body.data.student.admissionNumber).toBe("ADM-2026-00002");
+    expect(ok.body.data.student.admissionNumber).toBe("TS-2026-00002");
   });
 
   test("stale concurrent edits are rejected, not silently lost", async () => {
@@ -158,7 +158,7 @@ describe("hostile and invalid input", () => {
     const q = (s) => agent.get(`/api/students?search=${encodeURIComponent(s)}`);
     expect((await q("mary")).body.data).toHaveLength(2);
     expect((await q("mary le")).body.data).toHaveLength(1);
-    expect((await q("ADM-2026-00002")).body.data[0].lastName).toBe("Jones");
+    expect((await q("TS-2026-00002")).body.data[0].lastName).toBe("Jones");
     expect((await q("ary")).body.data).toHaveLength(0);
   });
 

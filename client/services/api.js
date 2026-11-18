@@ -24,14 +24,19 @@ function toQuery(params = {}) {
   return s ? `?${s}` : "";
 }
 
-async function request(method, path, { body, params } = {}) {
+async function request(method, path, { body, params, form } = {}) {
   let res;
   try {
     res = await fetch(`${BASE_URL}${path}${toQuery(params)}`, {
       method,
       credentials: "include",
-      headers: body ? { "Content-Type": "application/json" } : undefined,
-      body: body ? JSON.stringify(body) : undefined,
+      // Uploads are multipart; the header lets the API accept them (CSRF check).
+      headers: form
+        ? { "X-Requested-With": "EduPro" }
+        : body
+        ? { "Content-Type": "application/json" }
+        : undefined,
+      body: form || (body ? JSON.stringify(body) : undefined),
     });
   } catch {
     throw new ApiError(
@@ -61,7 +66,7 @@ export const api = {
       request("POST", "/auth/login", { body: { username, password } }),
     logout: () => request("POST", "/auth/logout", { body: {} }),
   },
-  dashboard: () => request("GET", "/dashboard"),
+  dashboard: (school) => request("GET", "/dashboard", { params: { school } }),
   admissions: {
     list: (params) => request("GET", "/admissions", { params }),
     get: (id) => request("GET", `/admissions/${id}`),
@@ -71,7 +76,38 @@ export const api = {
     enroll: (id, body) =>
       request("POST", `/admissions/${id}/enroll`, { body }),
   },
+  search: (q) => request("GET", "/search", { params: { q } }),
+  schools: {
+    list: (params) => request("GET", "/schools", { params }),
+    create: (body) => request("POST", "/schools", { body }),
+    update: (id, body) => request("PUT", `/schools/${id}`, { body }),
+    remove: (id) => request("DELETE", `/schools/${id}`),
+  },
   students: {
     list: (params) => request("GET", "/students", { params }),
+    get: (id) => request("GET", `/students/${id}`),
+    create: (body) => request("POST", "/students", { body }),
+    update: (id, body) => request("PUT", `/students/${id}`, { body }),
+    setStatus: (id, status) => request("PATCH", `/students/${id}/status`, { body: { status } }),
+    remove: (id) => request("DELETE", `/students/${id}`),
+    uploadPhoto: (id, file) => {
+      const form = new FormData();
+      form.append("photo", file);
+      return request("PUT", `/students/${id}/photo`, { form });
+    },
+    removePhoto: (id) => request("DELETE", `/students/${id}/photo`),
+    attendance: (id, params) => request("GET", `/students/${id}/attendance`, { params }),
+    markAttendance: (id, date, status, note) =>
+      request("PUT", `/students/${id}/attendance/${date}`, { body: { status, note } }),
+    clearAttendance: (id, date) => request("DELETE", `/students/${id}/attendance/${date}`),
+    results: (id) => request("GET", `/students/${id}/results`),
+    createResult: (id, body) => request("POST", `/students/${id}/results`, { body }),
+    updateResult: (id, rid, body) => request("PUT", `/students/${id}/results/${rid}`, { body }),
+    deleteResult: (id, rid) => request("DELETE", `/students/${id}/results/${rid}`),
+    fees: (id) => request("GET", `/students/${id}/fees`),
+    createFee: (id, body) => request("POST", `/students/${id}/fees`, { body }),
+    deleteFee: (id, fid) => request("DELETE", `/students/${id}/fees/${fid}`),
+    recordPayment: (id, fid, body) => request("POST", `/students/${id}/fees/${fid}/payments`, { body }),
+    removePayment: (id, fid, pid) => request("DELETE", `/students/${id}/fees/${fid}/payments/${pid}`),
   },
 };

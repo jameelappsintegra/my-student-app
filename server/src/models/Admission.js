@@ -19,6 +19,7 @@ const statusHistorySchema = new mongoose.Schema(
 const admissionSchema = new mongoose.Schema(
   {
     applicationNumber: { type: String, required: true, unique: true },
+    school: { type: mongoose.Schema.Types.ObjectId, ref: "School", required: true },
     ...personalFields,
     classApplied: { type: String, enum: CLASS_CODES, required: true },
     academicYear: { type: String, required: true },
@@ -40,6 +41,7 @@ admissionSchema.index(
 );
 admissionSchema.index({ status: 1, createdAt: -1 });
 admissionSchema.index({ createdAt: -1 });
+admissionSchema.index({ school: 1, createdAt: -1 });
 admissionSchema.index({ searchTokens: 1 });
 
 admissionSchema.pre("validate", function setDedupeKey(next) {

@@ -23,9 +23,23 @@ async function api(request, method, path, data) {
   return body.data;
 }
 
+// One shared school for the whole run, created on first use.
+let schoolPromise;
+function ensureSchool(request) {
+  schoolPromise =
+    schoolPromise ||
+    (async () => {
+      const list = await api(request, "GET", "/schools");
+      return list.find((s) => s.code === "E2E") || api(request, "POST", "/schools", { name: "E2E Test School", code: "E2E" });
+    })();
+  return schoolPromise;
+}
+
 // Seeds an application through the API (faster than the UI for setup).
 async function seedApplication(request, child, status = "submitted") {
+  const school = await ensureSchool(request);
   const app = await api(request, "POST", "/admissions", {
+    school: school.id,
     firstName: child.firstName,
     lastName: child.lastName,
     dateOfBirth: child.dobIso,
@@ -65,4 +79,21 @@ const test = base.test.extend({
   },
 });
 
-module.exports = { test, expect: base.expect, uniqueChild, seedApplication, api, ADMIN };
+async function seedStudent(request, child, extra = {}) {
+  const school = await ensureSchool(request);
+  return api(request, "POST", "/students", {
+    school: school.id,
+    firstName: child.firstName,
+    lastName: child.lastName,
+    dateOfBirth: child.dobIso,
+    gender: "male",
+    address: "9 Harbour Lane",
+    className: "5",
+    section: "C",
+    academicYear: "2026-2027",
+    father: { name: "Parent Tester", phone: "9876543210", occupation: "Engineer" },
+    ...extra,
+  });
+}
+
+module.exports = { test, expect: base.expect, uniqueChild, seedApplication, seedStudent, ensureSchool, api, ADMIN };

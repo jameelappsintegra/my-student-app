@@ -73,11 +73,19 @@ Run `db:maintain` once per release, before starting new API instances. It builds
 - **Self-managed:** run `mongodump --uri "$MONGODB_URI" --gzip --archive=edupro-$(date +%F).gz` nightly from a secondary. Encrypt the archives, copy them off-site, and keep the same retention.
 - **Test restores** at least once a term: restore into a separate cluster, run `npm run db:maintain` against it, and spot-check records.
 - Soft-deleted students are still in the database (`deletedAt` set). A restore is only needed for real data loss.
+- Include every collection, `studentPhotos.*` among them. `mongodump` and Atlas backups do this by default.
+- Never run `npm run seed` against a live school database. It refuses when `NODE_ENV=production` unless `--force` is given, and `--reset` deletes all schools, students, records and photos.
 - Write down who may trigger a restore, and how fast you need to recover (RPO/RTO).
 
-## 7. File storage (for the upcoming documents module)
+## 7. File storage
 
-There are no uploads yet. When document upload is added it should:
+**Student photos** are stored in the same MongoDB database, using GridFS (the `studentPhotos.files` and `studentPhotos.chunks` collections). That means backups and restores cover them automatically.
+- Each upload is checked by decoding it, so a renamed file is rejected.
+- Uploads are limited to 5 MB and re-encoded to a 512 px JPEG, which also removes metadata such as GPS location.
+- Photos are served only to signed-in users, with `Cache-Control: private`.
+- Allow roughly 50 KB per student.
+
+**Other documents** (birth certificates, transfer certificates) aren't supported yet. When they are added they should:
 
 - Store files in private object storage (S3, GCS or Azure Blob) with encryption at rest and public access blocked. Do not store them on the API's local disk (instances are stateless) or in a public bucket.
 - Keep only metadata in MongoDB: owner record, type, size, checksum, storage key and uploader.

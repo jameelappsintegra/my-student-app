@@ -11,6 +11,7 @@ import {
 } from "../../components/common";
 import useApi from "../../hooks/useApi";
 import { api } from "../../services/api";
+import useSchools from "../../hooks/useSchools";
 import {
   ADMISSION_STATUS,
   NEXT_ACTIONS,
@@ -138,14 +139,16 @@ function ActionDialog({ admission, action, onClose, onDone }) {
 const Admissions = () => {
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState("");
+  const [school, setSchool] = useState("");
+  const { schools } = useSchools();
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
   const [dialog, setDialog] = useState(null);
   const [notice, setNotice] = useState(null);
 
   const { data, pagination, loading, error, reload } = useApi(
-    () => api.admissions.list({ page, limit: 10, status, search: query }),
-    [page, status, query]
+    () => api.admissions.list({ page, limit: 10, status, school, search: query }),
+    [page, status, school, query]
   );
 
   const actionsFor = (a) => {
@@ -210,6 +213,20 @@ const Admissions = () => {
               </option>
             ))}
           </select>
+          <select
+            className="select select-bordered select-sm"
+            value={school}
+            onChange={(e) => {
+              setPage(1);
+              setSchool(e.target.value);
+            }}
+            aria-label="Filter by school"
+          >
+            <option value="">All schools</option>
+            {schools.map((s) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
           <button className="btn btn-sm" type="submit">
             Search
           </button>
@@ -255,7 +272,7 @@ const Admissions = () => {
                       </td>
                       <td>
                         {classLabel(a.classApplied)}
-                        <div className="text-xs text-slate-500">{a.academicYear}</div>
+                        <div className="text-xs text-slate-500">{a.school?.code} · {a.academicYear}</div>
                       </td>
                       <td>{formatDate(a.createdAt)}</td>
                       <td>

@@ -94,3 +94,55 @@ any open status → rejected        (rejected and enrolled are final)
 | DELETE | `/students/:id` | Soft delete. Hidden afterwards; frees the roll number. |
 
 Students are created only by enrolling an admission. A roll number is unique per academic year, class and section (409 if taken). If two people edit the same record at once, the later save gets a 409 instead of silently overwriting.
+
+## Schools
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| GET | `/schools` | `search`, `page`, `limit` (default 50). Each school includes `activeStudents`. |
+| POST | `/schools` | `{ name, code (2–8 letters/digits), board?, address?, city?, phone?, email?, principalName?, active? }`. A duplicate code → 409. |
+| GET / PUT / DELETE | `/schools/:id` | Changing the code once students exist → 409. Deleting a school that has students or admissions → 409; mark it `active: false` instead. Inactive schools refuse new students and applications. |
+
+`school` (a school id) is now required when creating admissions (`POST /admissions`) and students. Admission numbers are `<CODE>-<year>-<00001>`, numbered per school per year.
+
+## Students (direct create, photos)
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| POST | `/students` | Registers an existing student: the personal fields plus `school`, `className`, `academicYear`, `section?`, `rollNumber?`, `admissionDate?`, `email?`, `phone?`, `transport?` (`school_bus|private|walking|other`), `busRoute?`, `medicalNotes?`. A duplicate name and date of birth → 409. |
+| GET | `/students?school=` | Also filters by school. Rows include `school {id,name,code}` and `photoUrl`. |
+| PUT | `/students/:id/photo` | `multipart/form-data` with one field, `photo` (JPEG, PNG, WebP or HEIC, ≤ 5 MB), plus the header `X-Requested-With: EduPro`. The image is re-encoded to a 512×512 JPEG with metadata removed. Not an image → 400; too large → 413. |
+| GET | `/students/:id/photo` | Requires a session. `Cache-Control: private`. Supports ETag / 304. |
+| DELETE | `/students/:id/photo` | |
+
+## Attendance (per student)
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| GET | `/students/:id/attendance?from=&to=` | Dates are `YYYY-MM-DD`. The default range is 1 April to today, at most 400 days. Returns `summary { present, absent, late, half_day, leave, holiday, workingDays, percentage }` and `records`. Percentage = (present + late + ½ × half days) ÷ days that aren't holidays. |
+| PUT | `/students/:id/attendance/:date` | `{ status, note? }`. Marks or corrects one day (one record per student per day). Future dates → 400. |
+| DELETE | `/students/:id/attendance/:date` | |
+
+## Exam results
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| GET | `/students/:id/results` | Each result includes `total`, `maxTotal`, `percentage`, `grade` (A1 ≥ 91 … D ≥ 33, E below), `passed`, and the same per subject. |
+| POST | `/students/:id/results` | `{ academicYear, exam, examDate?, subjects: [{ subject, maxMarks, marks }], remarks? }`. Marks over the maximum or duplicate subjects → 400. One result per exam per year → 409. |
+| PUT / DELETE | `/students/:id/results/:resultId` | A record id belonging to a different student → 404. |
+
+## Fees
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| GET | `/students/:id/fees` | `summary { billed, paid, balance, overdue, overdueCount, status }` and `invoices` (each with `paid`, `balance`, `status` paid/partial/unpaid, and `overdue`). |
+| POST | `/students/:id/fees` | `{ academicYear, title, amount (whole ₹), dueDate }` |
+| PUT / DELETE | `/students/:id/fees/:feeId` | The amount can't go below what has been paid. A fee with payments can't be deleted (409). |
+| POST | `/students/:id/fees/:feeId/payments` | `{ amount, method (upi|cash|card|bank_transfer|cheque), paidAt?, reference? }`. Assigns a receipt number `RCPT-<CODE>-<year>-<00001>`. Overpaying → 400; already paid → 409. Simultaneous payments can't overpay. These are records of money received; no payment gateway is involved. |
+| DELETE | `/students/:id/fees/:feeId/payments/:paymentId` | For correcting mistakes. |
+
+## Search
+
+`GET /search?q=<text>&limit=8` matches name or admission-number prefixes across all schools and returns students with their school and `photoUrl`. It is used by the type-ahead search box.
+
+`GET /dashboard?school=<id>` also returns `attendance` (the latest marked day), `fees { billed, collected, outstanding, overdue, overdueInvoices }` and `studentsBySchool`.

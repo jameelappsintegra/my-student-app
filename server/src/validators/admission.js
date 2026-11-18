@@ -5,6 +5,8 @@ const {
   academicYear,
   paginationQuery,
   optionalText,
+  objectId,
+  schoolRef,
 } = require("./common");
 const { ADMISSION_STATUSES } = require("../constants");
 
@@ -20,6 +22,7 @@ const hasContact = (data) =>
 const createAdmission = z
   .object({
     ...personalFields,
+    school: schoolRef,
     classApplied: classCode,
     academicYear,
     saveAsDraft: z.boolean().optional(),
@@ -37,6 +40,7 @@ const createAdmission = z
 const listAdmissions = z
   .object({
     ...paginationQuery,
+    school: objectId.optional(),
     status: z.enum(ADMISSION_STATUSES).optional(),
     classApplied: classCode.optional(),
     academicYear: academicYear.optional(),

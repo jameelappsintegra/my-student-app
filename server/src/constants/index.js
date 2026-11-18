@@ -50,6 +50,9 @@ const ADMISSION_TRANSITIONS = {
   enrolled: [],
 };
 
+const SCHOOL_BOARDS = ["CBSE", "ICSE", "State Board", "IB", "Other"];
+const TRANSPORT_MODES = ["school_bus", "private", "walking", "other"];
+
 const PENDING_ADMISSION_STATUSES = [
   "submitted",
   "under_review",
@@ -65,4 +68,6 @@ module.exports = {
   ADMISSION_STATUSES,
   ADMISSION_TRANSITIONS,
   PENDING_ADMISSION_STATUSES,
+  SCHOOL_BOARDS,
+  TRANSPORT_MODES,
 };

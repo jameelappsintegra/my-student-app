@@ -19,6 +19,8 @@ function apiRouter(options = {}) {
   router.get("/dashboard", h(summary));
   router.use("/admissions", require("./admissions"));
   router.use("/students", require("./students"));
+router.use("/schools", require("./schools"));
+router.use("/search", require("./search"));
 
   return router;
 }

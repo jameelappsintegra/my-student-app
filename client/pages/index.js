@@ -1,3 +1,4 @@
+import { useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import Layout from "../components/layout/layout";
@@ -10,16 +11,18 @@ import {
 } from "../components/common";
 import useApi from "../hooks/useApi";
 import { api } from "../services/api";
-import { ADMISSION_STATUS, CLASSES, classLabel, formatDate } from "../constants";
+import { ADMISSION_STATUS, CLASSES, classLabel, formatDate, money } from "../constants";
+import useSchools from "../hooks/useSchools";
 
 // ECharts touches `window`, so render it on the client only.
 const ReactEcharts = dynamic(() => import("echarts-for-react"), { ssr: false });
 
-function Stat({ label, value, href }) {
+function Stat({ label, value, href, hint, tone = "text-slate-900" }) {
   const body = (
-    <div className="bg-white rounded-xl border border-slate-200 p-5 h-full hover:border-primary/40">
-      <p className="text-sm text-slate-500">{label}</p>
-      <p className="text-3xl font-semibold text-slate-900 mt-1">{value}</p>
+    <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 h-full hover:border-primary/40">
+      <p className="text-xs sm:text-sm text-slate-500">{label}</p>
+      <p className={`text-2xl sm:text-3xl font-semibold mt-1 tabular-nums ${tone}`}>{value}</p>
+      {hint && <p className="text-xs text-slate-500 mt-1">{hint}</p>}
     </div>
   );
   return href ? (
@@ -32,7 +35,9 @@ function Stat({ label, value, href }) {
 }
 
 export default function Dashboard() {
-  const { data, loading, error, reload } = useApi(() => api.dashboard(), []);
+  const { schools } = useSchools();
+  const [school, setSchool] = useState("");
+  const { data, loading, error, reload } = useApi(() => api.dashboard(school || undefined), [school]);
 
   const chartOption = data && {
     grid: { left: 40, right: 16, top: 16, bottom: 40 },
@@ -58,27 +63,59 @@ export default function Dashboard() {
 
   return (
     <Layout title="Dashboard">
-      <PageHeader title="Dashboard" subtitle="School overview" />
+      <PageHeader
+        title="Dashboard"
+        subtitle={school ? schools.find((s) => s.id === school)?.name : "All schools"}
+        actions={
+          <select className="select select-bordered select-sm" value={school} onChange={(e) => setSchool(e.target.value)} aria-label="Show school">
+            <option value="">All schools</option>
+            {schools.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+        }
+      />
 
-      {loading ? (
+      {loading && !data ? (
         <Loading />
       ) : error ? (
         <ErrorState error={error} onRetry={reload} />
       ) : (
         <div className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Stat label="Active students" value={data.totalStudents} href="/myclass" />
+          <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+            <Stat label="Active students" value={data.totalStudents} href={school ? `/students?school=${school}` : "/students"} />
             <Stat
-              label="Applications awaiting review"
+              label="Admissions to review"
               value={data.pendingAdmissions}
+              hint={data.approvedAwaitingEnrolment ? `${data.approvedAwaitingEnrolment} approved, not enrolled` : undefined}
               href="/admissions"
             />
             <Stat
-              label="Approved, awaiting enrolment"
-              value={data.approvedAwaitingEnrolment}
-              href="/admissions"
+              label="Attendance"
+              value={data.attendance?.percentage != null ? `${data.attendance.percentage}%` : "—"}
+              hint={data.attendance ? `${formatDate(data.attendance.date)} · ${data.attendance.absent} absent` : "Not marked yet"}
+              tone={data.attendance?.percentage < 85 ? "text-warning" : "text-slate-900"}
+            />
+            <Stat
+              label="Fees outstanding"
+              value={money(data.fees.outstanding)}
+              hint={data.fees.overdueInvoices ? `${money(data.fees.overdue)} overdue on ${data.fees.overdueInvoices} bills` : `${money(data.fees.collected)} collected`}
+              tone={data.fees.overdue ? "text-error" : "text-slate-900"}
             />
           </div>
+
+          {!school && data.studentsBySchool.length > 0 && (
+            <Card title="Schools">
+              <ul className="divide-y divide-slate-100">
+                {data.studentsBySchool.map((s) => (
+                  <li key={s.id}>
+                    <button className="w-full flex items-center justify-between py-2 text-left hover:text-primary" onClick={() => setSchool(s.id)}>
+                      <span className="text-sm font-medium">{s.name} <span className="text-xs text-slate-500">({s.code})</span></span>
+                      <span className="text-sm tabular-nums text-slate-600">{s.count} students</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
 
           <div className="grid gap-6 lg:grid-cols-5">
             <Card title="Students by class" className="lg:col-span-3">

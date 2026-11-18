@@ -4,6 +4,7 @@ import DatePicker from "react-datepicker";
 import Layout from "../../components/layout/layout";
 import { Card, PageHeader } from "../../components/common";
 import { api, ApiError } from "../../services/api";
+import useSchools from "../../hooks/useSchools";
 import {
   CLASSES,
   GENDERS,
@@ -14,6 +15,7 @@ import {
 const emptyPerson = () => ({ name: "", phone: "", email: "", occupation: "" });
 
 const initialForm = () => ({
+  school: "",
   firstName: "",
   middleName: "",
   lastName: "",
@@ -48,6 +50,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function validate(f) {
   const e = {};
+  if (!f.school) e.school = "Select a school";
   if (!f.firstName.trim()) e.firstName = "First name is required";
   if (!f.lastName.trim()) e.lastName = "Last name is required";
   if (!f.dateOfBirth) e.dateOfBirth = "Date of birth is required";
@@ -98,6 +101,7 @@ function Field({ label, error, required, children, className = "" }) {
 }
 
 const NewAdmission = () => {
+  const { schools } = useSchools();
   const [form, setForm] = useState(initialForm);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -289,8 +293,19 @@ const NewAdmission = () => {
           </div>
         </Card>
 
-        <Card title="Class">
+        <Card title="School and class">
           <div className="grid gap-x-4 md:grid-cols-3">
+            <Field label="School" required error={errors.school}>
+              <select
+                {...input("school")}
+                className={`select select-bordered w-full ${errors.school ? "select-error" : ""}`}
+              >
+                <option value="">Select…</option>
+                {schools.filter((s) => s.active).map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </Field>
             <Field label="Class applied for" required error={errors.classApplied}>
               <select
                 {...input("classApplied")}

@@ -2,6 +2,7 @@ const v = require("../../src/validators/admission");
 const s = require("../../src/validators/student");
 
 const base = () => ({
+  school: "64b7f0f0f0f0f0f0f0f0f0f0",
   firstName: "Aisha",
   lastName: "Rahman",
   dateOfBirth: "2018-03-14",

@@ -1,5 +1,9 @@
 const mongoose = require("mongoose");
-const { CLASS_CODES, STUDENT_STATUSES } = require("../constants");
+const {
+  CLASS_CODES,
+  STUDENT_STATUSES,
+  TRANSPORT_MODES,
+} = require("../constants");
 const {
   personalFields,
   buildDedupeKey,
@@ -7,10 +11,41 @@ const {
 } = require("./common");
 const { cleanTransform } = require("../utils/serialize");
 
+// Public shape: restricted fields removed, photo pointer replaced by a URL
+// with a version so browsers re-fetch only when the photo changes.
+function studentPublic(ret) {
+  delete ret.medicalNotes;
+  const photo = ret.photo;
+  delete ret.photo;
+  ret.photoUrl =
+    photo && photo.fileId
+      ? `/api/students/${ret.id}/photo?v=${new Date(photo.updatedAt).getTime()}`
+      : null;
+  // `school` is an ObjectId, or a populated school (document or lean).
+  const sc = ret.school;
+  if (sc && typeof sc === "object" && (sc.name || sc.code)) {
+    ret.school = { id: String(sc.id || sc._id), name: sc.name, code: sc.code };
+  } else if (sc) {
+    ret.school = { id: String(sc) };
+  }
+  return ret;
+}
+
 const studentSchema = new mongoose.Schema(
   {
     admissionNumber: { type: String, required: true, unique: true },
+    school: { type: mongoose.Schema.Types.ObjectId, ref: "School", required: true },
     ...personalFields,
+    // The student's own contact details (older students), optional.
+    email: { type: String, trim: true, lowercase: true, maxlength: 254 },
+    phone: { type: String, trim: true, maxlength: 20 },
+    transport: { type: String, enum: TRANSPORT_MODES },
+    busRoute: { type: String, trim: true, maxlength: 60 },
+    // Photo bytes live in GridFS (bucket "studentPhotos"); this is the pointer.
+    photo: {
+      fileId: mongoose.Schema.Types.ObjectId,
+      updatedAt: Date,
+    },
     admissionDate: { type: Date, required: true, default: Date.now },
     academicYear: { type: String, required: true },
     className: { type: String, enum: CLASS_CODES, required: true },
@@ -31,24 +66,22 @@ const studentSchema = new mongoose.Schema(
     optimisticConcurrency: true,
     toJSON: {
       transform(doc, ret) {
-        cleanTransform(doc, ret);
-        // Restricted field: never serialised until role-based access exists.
-        delete ret.medicalNotes;
-        return ret;
+        return studentPublic(cleanTransform(doc, ret));
       },
     },
   }
 );
 
+studentSchema.index({ school: 1, deletedAt: 1, className: 1, section: 1 });
 studentSchema.index({ dedupeKey: 1 });
 studentSchema.index({ searchTokens: 1 });
 // Default list order and the class/section roster view.
 studentSchema.index({ deletedAt: 1, lastName: 1, firstName: 1 });
 studentSchema.index({ deletedAt: 1, className: 1, section: 1, rollNumber: 1 });
 studentSchema.index({ deletedAt: 1, status: 1 });
-// One roll number per section per year. Soft delete unsets rollNumber.
+// One roll number per section per year in each school. Soft delete unsets it.
 studentSchema.index(
-  { academicYear: 1, className: 1, section: 1, rollNumber: 1 },
+  { school: 1, academicYear: 1, className: 1, section: 1, rollNumber: 1 },
   { unique: true, partialFilterExpression: { rollNumber: { $exists: true } } }
 );
 
@@ -61,3 +94,4 @@ studentSchema.pre("validate", function setDedupeKey(next) {
 });
 
 module.exports = mongoose.model("Student", studentSchema);
+module.exports.studentPublic = studentPublic;

@@ -97,6 +97,9 @@ const classCode = z.enum(CLASS_CODES, {
 });
 
 const objectId = z.string().regex(/^[a-f0-9]{24}$/i, "Invalid id");
+const schoolRef = z
+  .string({ required_error: "Select a school" })
+  .regex(/^[a-f0-9]{24}$/i, "Select a school");
 
 const paginationQuery = {
   page: z.coerce.number().int().min(1).default(1),
@@ -110,6 +113,7 @@ module.exports = {
   classCode,
   academicYear,
   objectId,
+  schoolRef,
   paginationQuery,
   optionalText,
 };

@@ -1,5 +1,6 @@
 const request = require("supertest");
 const User = require("../../src/models/User");
+const School = require("../../src/models/School");
 const { hashPassword } = require("../../src/services/authService");
 
 const ADMIN = { username: "admin", password: "correct horse battery staple" };
@@ -12,9 +13,17 @@ async function createAdmin(overrides = {}) {
   });
 }
 
+// Every test database gets one school; applications default to it.
+let defaultSchoolId = null;
+async function createSchool(overrides = {}) {
+  const school = await School.create({ name: "Test School", code: "TS", ...overrides });
+  return school.id;
+}
+
 // Returns a supertest agent that carries the session cookie.
 async function signIn(app) {
   await createAdmin();
+  defaultSchoolId = await createSchool();
   const agent = request.agent(app);
   const res = await agent.post("/api/auth/login").send(ADMIN);
   if (res.status !== 200) throw new Error(`login failed: ${res.body.message}`);
@@ -22,6 +31,7 @@ async function signIn(app) {
 }
 
 const validApplication = (overrides = {}) => ({
+  school: defaultSchoolId,
   firstName: "Aisha",
   lastName: "Rahman",
   dateOfBirth: "2018-03-14",
@@ -49,4 +59,4 @@ async function enrolNew(app, overrides, enrolBody = {}) {
   return res.body.data.student;
 }
 
-module.exports = { ADMIN, createAdmin, signIn, validApplication, createApproved, enrolNew };
+module.exports = { ADMIN, createAdmin, createSchool, signIn, schoolId: () => defaultSchoolId, validApplication, createApproved, enrolNew };

@@ -74,3 +74,55 @@ export function formatDate(iso) {
     timeZone: "UTC",
   });
 }
+
+export const TRANSPORT = {
+  school_bus: "School bus",
+  private: "Private vehicle",
+  walking: "Walks to school",
+  other: "Other",
+};
+
+export const ATTENDANCE = {
+  present: { label: "Present", short: "P", badge: "badge-success", cell: "bg-success text-success-content" },
+  absent: { label: "Absent", short: "A", badge: "badge-error", cell: "bg-error text-error-content" },
+  late: { label: "Late", short: "L", badge: "badge-warning", cell: "bg-warning text-warning-content" },
+  half_day: { label: "Half day", short: "½", badge: "badge-warning", cell: "bg-warning/60" },
+  leave: { label: "Leave", short: "Lv", badge: "badge-info", cell: "bg-info text-info-content" },
+  holiday: { label: "Holiday", short: "H", badge: "badge-ghost", cell: "bg-base-300 text-slate-500" },
+};
+
+export const PAYMENT_METHODS = {
+  upi: "UPI",
+  cash: "Cash",
+  card: "Card",
+  bank_transfer: "Bank transfer",
+  cheque: "Cheque",
+};
+
+export const SCHOOL_BOARDS = ["CBSE", "ICSE", "State Board", "IB", "Other"];
+
+export const FEE_STATUS = {
+  paid: { label: "Paid", badge: "badge-success" },
+  partial: { label: "Part paid", badge: "badge-warning" },
+  unpaid: { label: "Unpaid", badge: "badge-ghost" },
+  overdue: { label: "Overdue", badge: "badge-error" },
+};
+
+const inr = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
+export const money = (n) => inr.format(n || 0);
+
+export const fullName = (s) => [s.firstName, s.middleName, s.lastName].filter(Boolean).join(" ");
+
+// Age in whole years from an ISO date of birth.
+export function ageFrom(iso, today = new Date()) {
+  if (!iso) return null;
+  const [y, m, d] = iso.slice(0, 10).split("-").map(Number);
+  let age = today.getFullYear() - y;
+  if (today.getMonth() + 1 < m || (today.getMonth() + 1 === m && today.getDate() < d)) age -= 1;
+  return age;
+}
+
+export const todayIso = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};

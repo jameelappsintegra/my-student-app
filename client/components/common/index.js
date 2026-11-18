@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+
 export function PageHeader({ title, subtitle, actions }) {
   return (
     <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
@@ -89,5 +91,97 @@ export function Pagination({ pagination, onPage }) {
         </button>
       </div>
     </div>
+  );
+}
+
+const AVATAR_TONES = ["bg-indigo-100 text-indigo-700", "bg-sky-100 text-sky-700", "bg-teal-100 text-teal-700", "bg-amber-100 text-amber-700", "bg-rose-100 text-rose-700", "bg-violet-100 text-violet-700"];
+
+// Student photo, or initials on a tone picked from the name when there is none.
+export function Avatar({ student, size = "w-10 h-10", text = "text-sm" }) {
+  const initials = `${student.firstName?.[0] || ""}${student.lastName?.[0] || ""}`.toUpperCase();
+  if (student.photoUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={student.photoUrl}
+        alt={`Photo of ${student.firstName} ${student.lastName}`}
+        className={`${size} rounded-full object-cover bg-slate-100 shrink-0`}
+        loading="lazy"
+      />
+    );
+  }
+  const tone = AVATAR_TONES[(initials.charCodeAt(0) + (initials.charCodeAt(1) || 0)) % AVATAR_TONES.length];
+  return (
+    <span
+      className={`${size} ${text} ${tone} rounded-full font-semibold inline-flex items-center justify-center shrink-0`}
+      aria-hidden="true"
+    >
+      {initials}
+    </span>
+  );
+}
+
+// Accessible modal; on phones it slides up from the bottom like a sheet.
+export function Dialog({ title, children, onClose, footer }) {
+  useEffect(() => {
+    const onKey = (e) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return (
+    <div className="modal modal-open modal-bottom sm:modal-middle" role="dialog" aria-modal="true" aria-label={title}>
+      <div className="modal-box max-h-[90vh]">
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <h3 className="font-semibold text-lg">{title}</h3>
+          <button className="btn btn-ghost btn-sm btn-circle" onClick={onClose} aria-label="Close">✕</button>
+        </div>
+        {children}
+        {footer && <div className="modal-action flex-wrap">{footer}</div>}
+      </div>
+    </div>
+  );
+}
+
+export function ConfirmDialog({ title, message, confirmLabel = "Delete", onConfirm, onClose, busy, error }) {
+  return (
+    <Dialog
+      title={title}
+      onClose={onClose}
+      footer={
+        <>
+          <button className="btn btn-ghost" onClick={onClose} disabled={busy}>Cancel</button>
+          <button className={`btn btn-error ${busy ? "loading" : ""}`} onClick={onConfirm} disabled={busy}>{confirmLabel}</button>
+        </>
+      }
+    >
+      <p className="text-sm text-slate-600">{message}</p>
+      {error && <div className="alert alert-error mt-3 py-2"><span>{error.message}</span></div>}
+    </Dialog>
+  );
+}
+
+export function Notice({ message, tone = "success", onDismiss }) {
+  if (!message) return null;
+  return (
+    <div className={`alert alert-${tone} mb-4 py-2`} role="status">
+      <span>{message}</span>
+      {onDismiss && <button className="btn btn-ghost btn-sm" onClick={onDismiss}>Dismiss</button>}
+    </div>
+  );
+}
+
+// Label/value list used across the student profile.
+export function Details({ items }) {
+  const shown = items.filter(([, v]) => v !== undefined && v !== null && v !== "");
+  if (!shown.length) return <p className="text-sm text-slate-500">Nothing recorded.</p>;
+  return (
+    <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+      {shown.map(([label, value]) => (
+        <div key={label} className="min-w-0">
+          <dt className="text-xs uppercase tracking-wide text-slate-500">{label}</dt>
+          <dd className="text-sm text-slate-800 break-words">{value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }

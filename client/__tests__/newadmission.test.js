@@ -5,10 +5,18 @@ import { api, ApiError } from "../services/api";
 
 jest.mock("../services/api", () => {
   const actual = jest.requireActual("../services/api");
-  return { ...actual, api: { admissions: { create: jest.fn() } } };
+  return {
+    ...actual,
+    api: {
+      admissions: { create: jest.fn() },
+      schools: { list: jest.fn(() => Promise.resolve({ data: [{ id: "s1", name: "Green Valley", code: "GVPS", active: true }, { id: "s2", name: "Closed School", code: "CS", active: false }] })) },
+    },
+  };
 });
 
 async function fillValid(user) {
+  await screen.findByRole("option", { name: "Green Valley" });
+  await user.selectOptions(screen.getByLabelText(/^school/i), "s1");
   await user.type(screen.getByLabelText(/^first name/i), "Aisha");
   await user.type(screen.getByLabelText(/^last name/i), "Rahman");
   await user.type(screen.getByLabelText(/date of birth/i), "14/03/2018");
@@ -30,8 +38,15 @@ test("shows required-field errors and does not call the API", async () => {
   expect(screen.getByText("First name is required")).toBeInTheDocument();
   expect(screen.getByText("Date of birth is required")).toBeInTheDocument();
   expect(screen.getByText("Select a class")).toBeInTheDocument();
+  expect(screen.getByText("Select a school")).toBeInTheDocument();
   expect(screen.getByText("Enter at least one parent or guardian name")).toBeInTheDocument();
   expect(api.admissions.create).not.toHaveBeenCalled();
+});
+
+test("only schools accepting students are offered", async () => {
+  render(<NewAdmission />);
+  expect(await screen.findByRole("option", { name: "Green Valley" })).toBeInTheDocument();
+  expect(screen.queryByRole("option", { name: "Closed School" })).not.toBeInTheDocument();
 });
 
 test("validates phone and email format", async () => {
@@ -66,6 +81,7 @@ test("submits a valid application and shows the confirmation", async () => {
 
   const payload = api.admissions.create.mock.calls[0][0];
   expect(payload).toMatchObject({
+    school: "s1",
     firstName: "Aisha",
     lastName: "Rahman",
     dateOfBirth: "2018-03-14",

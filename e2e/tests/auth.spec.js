@@ -46,6 +46,6 @@ test("sign out ends the session everywhere", async ({ page }) => {
   await page.getByRole("button", { name: "Sign out" }).click();
   await expect(page).toHaveURL(/\/login$/);
   expect((await page.request.get("/api/dashboard")).status()).toBe(401);
-  await page.goto("/myclass");
-  await expect(page).toHaveURL(/\/login\?next=%2Fmyclass$/);
+  await page.goto("/students");
+  await expect(page).toHaveURL(/\/login\?next=%2Fstudents$/);
 });

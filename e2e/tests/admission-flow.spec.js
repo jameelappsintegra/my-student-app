@@ -1,6 +1,7 @@
-const { test, expect, uniqueChild, seedApplication } = require("./fixtures");
+const { test, expect, uniqueChild, seedApplication, ensureSchool } = require("./fixtures");
 
 async function fillForm(page, child) {
+  await page.getByLabel("School *").selectOption({ label: "E2E Test School" });
   await page.getByLabel("First name *").fill(child.firstName);
   await page.getByLabel("Last name *").fill(child.lastName);
   await page.getByLabel("Date of birth *").fill(child.dobInput);
@@ -13,6 +14,7 @@ async function fillForm(page, child) {
 }
 
 test("apply → review → approve → enrol → appears in students and dashboard", async ({ page }) => {
+  await ensureSchool(page.request);
   const child = uniqueChild();
   await page.goto("/");
   const before = Number(await page.getByText("Active students").locator("..").locator("p").nth(1).innerText());
@@ -41,17 +43,17 @@ test("apply → review → approve → enrol → appears in students and dashboa
   const dialog = page.getByRole("dialog");
   await dialog.getByRole("spinbutton").fill("7");
   await dialog.getByRole("button", { name: "Enrol" }).click();
-  await expect(page.locator(".alert-success")).toContainText(/admission number ADM-\d{4}-\d{5}/);
+  await expect(page.locator(".alert-success")).toContainText(/admission number E2E-\d{4}-\d{5}/);
   await expect(row).toContainText("Enrolled");
   await expect(row.getByRole("button")).toHaveCount(0);
 
   await page.getByRole("link", { name: "Students" }).click();
-  await page.getByLabel("Search students").fill(child.firstName);
+  await page.getByLabel("Filter students").fill(child.firstName);
   await page.getByRole("button", { name: "Search" }).click();
   const studentRow = page.locator("tbody tr").first();
   await expect(studentRow).toContainText(`${child.firstName} ${child.lastName}`);
   await expect(studentRow).toContainText("Second Standard – A");
-  await expect(studentRow).toContainText("7");
+  await expect(studentRow).toContainText("E2E Test School");
 
   await page.getByRole("link", { name: "Dashboard" }).click();
   await expect(page.getByText("Active students").locator("..").locator("p").nth(1)).toHaveText(String(before + 1));
@@ -59,6 +61,7 @@ test("apply → review → approve → enrol → appears in students and dashboa
 });
 
 test("client-side validation blocks an incomplete form", async ({ page }) => {
+  await ensureSchool(page.request);
   let posted = false;
   page.on("request", (r) => {
     if (r.method() === "POST" && r.url().includes("/admissions")) posted = true;
@@ -130,15 +133,15 @@ test("every page loads without errors and placeholder pages are honest", async (
     ["/", "Dashboard"],
     ["/admissions", "Admissions"],
     ["/newadmission", "New Admission"],
-    ["/myclass", "Students"],
-    ["/attendance", "Attendance"],
-    ["/parents", "Parents"],
-    ["/personaldetails", "Personal Details"],
+    ["/students", "Students"],
+    ["/students/new", "Add student"],
+    ["/schools", "Schools"],
   ]) {
     await page.goto(path);
     await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
     await expect(page).toHaveTitle(`${heading} · EduPro`);
   }
-  await page.goto("/attendance");
-  await expect(page.getByText("Not available yet")).toBeVisible();
+  // The old class page now redirects to Students.
+  await page.goto("/myclass");
+  await expect(page).toHaveURL(/\/students$/);
 });

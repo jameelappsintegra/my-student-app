@@ -1,7 +1,7 @@
 const request = require("supertest");
 const { createApp } = require("../../src/app");
 const { startDb, clearDb, stopDb } = require("./setup");
-const { signIn } = require("./helpers");
+const { signIn, validApplication } = require("./helpers");
 
 const app = createApp();
 jest.setTimeout(60000);
@@ -14,17 +14,7 @@ beforeEach(async () => {
 afterEach(clearDb);
 afterAll(stopDb);
 
-const validApplication = () => ({
-  firstName: "Aisha",
-  lastName: "Rahman",
-  dateOfBirth: "2018-03-14",
-  gender: "female",
-  address: "12 Main Street, Parangipettai",
-  classApplied: "2",
-  academicYear: "2026-2027",
-  father: { name: "Imran Rahman", phone: "+91 98765 43210" },
-  mother: { name: "Sara Rahman" },
-});
+
 
 async function approve(id) {
   await agent.patch(`/api/admissions/${id}/status`).send({ status: "under_review" });
@@ -99,7 +89,7 @@ describe("admissions", () => {
       .send({ section: "a", rollNumber: 7 });
     expect(res.status).toBe(201);
     const { student, admission } = res.body.data;
-    expect(student.admissionNumber).toBe("ADM-2026-00001");
+    expect(student.admissionNumber).toBe("TS-2026-00001");
     expect(student.className).toBe("2");
     expect(student.section).toBe("A");
     expect(admission.status).toBe("enrolled");

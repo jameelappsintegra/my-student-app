@@ -7,7 +7,10 @@ jest.mock("../services/api", () => {
   const actual = jest.requireActual("../services/api");
   return {
     ...actual,
-    api: { admissions: { list: jest.fn(), setStatus: jest.fn(), enroll: jest.fn() } },
+    api: {
+      admissions: { list: jest.fn(), setStatus: jest.fn(), enroll: jest.fn() },
+      schools: { list: jest.fn(() => Promise.resolve({ data: [{ id: "s1", name: "Green Valley", code: "GVPS", active: true }] })) },
+    },
   };
 });
 

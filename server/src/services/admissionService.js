@@ -7,6 +7,8 @@ const ApiError = require("../utils/ApiError");
 const { buildPagination, parseSort, searchFilter } = require("../utils/query");
 const { toPublic } = require("../utils/serialize");
 const { ADMISSION_TRANSITIONS } = require("../constants");
+const { nextAdmissionNumber } = require("./admissionNumbers");
+const { requireActiveSchool } = require("./schoolService");
 
 const pad = (n) => String(n).padStart(5, "0");
 const startYear = (academicYear) => academicYear.slice(0, 4);
@@ -14,6 +16,7 @@ const startYear = (academicYear) => academicYear.slice(0, 4);
 async function createAdmission(input) {
   const { saveAsDraft, ...fields } = input;
   const dedupeKey = buildDedupeKey(fields);
+  await requireActiveSchool(fields.school);
 
   const existingStudent = await Student.findOne({ dedupeKey, deletedAt: null })
     .select("admissionNumber")
@@ -61,6 +64,7 @@ async function createAdmission(input) {
 
 async function listAdmissions(q) {
   const filter = {};
+  if (q.school) filter.school = q.school;
   if (q.status) filter.status = q.status;
   if (q.classApplied) filter.classApplied = q.classApplied;
   if (q.academicYear) filter.academicYear = q.academicYear;
@@ -69,8 +73,9 @@ async function listAdmissions(q) {
   const [items, total] = await Promise.all([
     Admission.find(filter)
       .select(
-        "applicationNumber firstName middleName lastName dateOfBirth gender classApplied academicYear status createdAt student"
+        "applicationNumber school firstName middleName lastName dateOfBirth gender classApplied academicYear status createdAt student"
       )
+      .populate("school", "name code")
       .sort(parseSort(q.sort))
       .skip((q.page - 1) * q.limit)
       .limit(q.limit)
@@ -78,19 +83,24 @@ async function listAdmissions(q) {
     Admission.countDocuments(filter),
   ]);
   return {
-    items: items.map(toPublic),
+    items: items.map((a) => ({ ...toPublic(a), school: schoolRef(a.school) })),
     pagination: buildPagination(q.page, q.limit, total),
   };
 }
 
+function schoolRef(s) {
+  return s && s.name ? { id: String(s._id), name: s.name, code: s.code } : s;
+}
+
 async function getAdmission(id) {
-  const admission = await Admission.findById(id);
+  const admission = await Admission.findById(id).populate("school", "name code");
   if (!admission) throw ApiError.notFound("Admission not found");
   return admission;
 }
 
 async function updateStatus(id, { status, note }) {
-  const admission = await getAdmission(id);
+  const admission = await Admission.findById(id);
+  if (!admission) throw ApiError.notFound("Admission not found");
   if (status === "enrolled") {
     throw ApiError.badRequest(
       "Use the enrol action to enrol an approved application."
@@ -106,7 +116,7 @@ async function updateStatus(id, { status, note }) {
   admission.statusHistory.push({ status, note });
   if (status === "rejected") admission.isActiveApplication = false;
   await admission.save();
-  return admission;
+  return getAdmission(id);
 }
 
 // Creates the student and marks the admission enrolled atomically.
@@ -134,13 +144,14 @@ async function enroll(id, { section, rollNumber, admissionDate }) {
         );
       }
 
-      const year = startYear(admission.academicYear);
-      const seq = await Counter.next(`admission:${year}`, session);
+      const school = await requireActiveSchool(admission.school, session);
+      const admissionNumber = await nextAdmissionNumber(school, admission.academicYear, session);
       const personal = admission.toObject();
       const [student] = await Student.create(
         [
           {
-            admissionNumber: `ADM-${year}-${pad(seq)}`,
+            admissionNumber,
+            school: admission.school,
             firstName: personal.firstName,
             middleName: personal.middleName,
             lastName: personal.lastName,
