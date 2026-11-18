@@ -146,3 +146,20 @@ Students are created only by enrolling an admission. A roll number is unique per
 `GET /search?q=<text>&limit=8` matches name or admission-number prefixes across all schools and returns students with their school and `photoUrl`. It is used by the type-ahead search box.
 
 `GET /dashboard?school=<id>` also returns `attendance` (the latest marked day), `fees { billed, collected, outstanding, overdue, overdueInvoices }` and `studentsBySchool`.
+
+## Attendance register (whole class)
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| GET | `/attendance/register?school=&className=&section=&date=` | Active students in that class (and section, if given) in roll order, each with `attendance` for the date (or `null`). `marked` is how many already have a mark. |
+| PUT | `/attendance/register` | `{ school, className, section?, date, entries: [{ student, status, note? }] }`, up to 200 entries. Saved in one bulk upsert. Students outside the class, inactive students and duplicates → 400 and nothing is saved. Future dates → 400. |
+
+## Reports
+
+`GET /reports/<name>?school=&className=&section=&format=json|csv`. With `format=csv` the response is a file download (`Content-Disposition: attachment`, UTF-8 with BOM, `Cache-Control: private, no-store`). Cells that start with `= + - @` are prefixed with `'` so spreadsheets don't run them as formulas.
+
+| Name | Rows |
+| --- | --- |
+| `fee-defaulters` | Students with an overdue balance: `overdue`, `balance`, `overdueBills`, `oldestDue`, largest first. `data.overdue` is the total. |
+| `low-attendance` | Also takes `threshold` (default 75), `from` and `to`. Shows `days`, `absent` and `percentage`, lowest first. Holidays don't count as school days. |
+| `students` | Class list with gender, date of birth, address, transport and the first parent's name and phone. |

@@ -1,7 +1,7 @@
 const { test, expect, uniqueChild, seedStudent } = require("./fixtures");
 
 test("pages fit a phone screen and the menu works", async ({ page }) => {
-  for (const path of ["/", "/admissions", "/newadmission", "/students", "/students/new", "/schools"]) {
+  for (const path of ["/", "/admissions", "/newadmission", "/students", "/students/new", "/schools", "/attendance", "/reports"]) {
     await page.goto(path);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
@@ -11,9 +11,9 @@ test("pages fit a phone screen and the menu works", async ({ page }) => {
   // Bottom tabs like a native app.
   const tabs = page.getByRole("navigation", { name: "Tabs" });
   await expect(tabs).toBeVisible();
-  await tabs.getByRole("link", { name: "Schools" }).click();
-  await expect(page).toHaveURL(/\/schools$/);
-  await expect(tabs.getByRole("link", { name: "Schools" })).toHaveAttribute("aria-current", "page");
+  await tabs.getByRole("link", { name: "Attendance" }).click();
+  await expect(page).toHaveURL(/\/attendance$/);
+  await expect(tabs.getByRole("link", { name: "Attendance" })).toHaveAttribute("aria-current", "page");
   // The side menu still opens for the rest.
   await page.getByLabel("Open menu").click();
   await page.getByRole("link", { name: "New Admission" }).click();

@@ -23,8 +23,13 @@ EduPro is a school management app. This repository holds three parts:
   - **Attendance**: year summary and a monthly calendar where each day can be marked or corrected.
   - **Parents**: contact details with tap-to-call.
   - **Fees**: bills, part and full payments with receipt numbers, and overdue tracking.
+- **Attendance register**: pick a school, class, section and date, then mark the whole class on one screen.
+  - Each student has one-tap Present / Absent / Late / Half-day / Leave buttons, plus "Mark rest present" and "Holiday" for the whole class.
+  - The register remembers the last class used and warns before you leave with unsaved marks.
+  - Marks show up on each student's calendar.
+- **Reports**: fee defaulters, low attendance (threshold of your choice) and class lists with parent contacts. Each can be filtered by school and class, viewed on screen, or downloaded as CSV for Excel (UTF-8, with protection against spreadsheet formula injection).
 - **Dashboard**: active students, admissions to review, the latest day's attendance, fees outstanding and overdue, students per school and per class. It can be filtered by school.
-- **Phone layout**: an app bar, bottom tabs, full-screen search and card lists. The app can be installed to a phone's home screen.
+- **Phone layout**: an app bar, bottom tabs (Home, Students, Attendance, Admissions), full-screen search and card lists. The app can be installed to a phone's home screen.
 
 > 🔐 **Sign-in is required.** Every page and every data endpoint needs an admin session.
 > - Passwords are bcrypt-hashed.
@@ -85,10 +90,10 @@ More detail: [docs/API.md](docs/API.md) · [docs/DEPLOYMENT.md](docs/DEPLOYMENT.
 | Command | What it covers | Count |
 | --- | --- | --- |
 | `cd server && npm run test:unit` | validators, query helpers, sanitizer, error mapping, env config, password hashing | 52 |
-| `cd server && npm run test:integration` | API against an in-memory MongoDB replica set: auth, admissions, schools, student CRUD, photo upload and validation, attendance, results and grading, fees and payments (including simultaneous payments), search, dashboard, concurrency, injection, index usage | 74 |
-| `cd server && npm test` | both of the above (`npm run test:coverage` for coverage) | 126 |
-| `cd client && npm test` | React components: sign-in, session guard, global search, student form, photo upload, attendance calendar, fees, admissions, dashboard | 40 |
-| `cd e2e && npm install && npm test` | builds the web app, starts a throwaway database, an admin and the API, then runs Playwright on desktop and a phone | 16 |
+| `cd server && npm run test:integration` | API against an in-memory MongoDB replica set: auth, admissions, schools, student CRUD, photo upload and validation, attendance and the class register, results and grading, fees and payments (including simultaneous payments), reports and CSV escaping, search, dashboard, concurrency, injection, index usage | 80 |
+| `cd server && npm test` | both of the above (`npm run test:coverage` for coverage) | 132 |
+| `cd client && npm test` | React components: sign-in, session guard, global search, student form, photo upload, attendance calendar and register, fees, reports, admissions, dashboard | 43 |
+| `cd e2e && npm install && npm test` | builds the web app, starts a throwaway database, an admin and the API, then runs Playwright on desktop and a phone | 18 |
 
 The server and e2e tests download a MongoDB binary on first run. If your network blocks that, set `MONGOMS_SYSTEM_BINARY=/path/to/mongod` (and `MONGOMS_VERSION` to its version). The e2e suite uses Playwright's Chromium (`npx playwright install chromium`).
 
@@ -99,10 +104,9 @@ CI (`.github/workflows/ci.yml`) runs all of these on every push.
 - **One role only (admin).** Role-based permissions (principal, teacher, parent, accountant…) and password reset by email are the next phase (see docs/AUDIT.md §5), and the remaining modules depend on them. Reset a password with `npm run create-admin`; doing so also signs out that user's sessions.
 - Not built yet:
   - parent, teacher and student logins
-  - class-wide attendance entry (attendance is marked per student)
   - exam schedules and result approval or publishing
   - timetables and online payment gateways
-  - notifications and exportable reports
+  - notifications (SMS or WhatsApp to parents) and PDF report cards
   - document uploads other than photos
 - All signed-in admins see every school. There is no per-school restriction yet.
 - Classes are a fixed list (LKG–12). Sections are free text.

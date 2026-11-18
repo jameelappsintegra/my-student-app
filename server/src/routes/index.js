@@ -21,6 +21,8 @@ function apiRouter(options = {}) {
   router.use("/students", require("./students"));
 router.use("/schools", require("./schools"));
 router.use("/search", require("./search"));
+router.use("/attendance", require("./attendance"));
+router.use("/reports", require("./reports"));
 
   return router;
 }

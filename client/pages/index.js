@@ -93,12 +93,14 @@ export default function Dashboard() {
               value={data.attendance?.percentage != null ? `${data.attendance.percentage}%` : "—"}
               hint={data.attendance ? `${formatDate(data.attendance.date)} · ${data.attendance.absent} absent` : "Not marked yet"}
               tone={data.attendance?.percentage < 85 ? "text-warning" : "text-slate-900"}
+              href="/attendance"
             />
             <Stat
               label="Fees outstanding"
               value={money(data.fees.outstanding)}
               hint={data.fees.overdueInvoices ? `${money(data.fees.overdue)} overdue on ${data.fees.overdueInvoices} bills` : `${money(data.fees.collected)} collected`}
               tone={data.fees.overdue ? "text-error" : "text-slate-900"}
+              href="/reports"
             />
           </div>
 

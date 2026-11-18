@@ -77,6 +77,18 @@ export const api = {
       request("POST", `/admissions/${id}/enroll`, { body }),
   },
   search: (q) => request("GET", "/search", { params: { q } }),
+  register: {
+    get: (params) => request("GET", "/attendance/register", { params }),
+    save: (body) => request("PUT", "/attendance/register", { body }),
+  },
+  reports: {
+    get: (name, params) => request("GET", `/reports/${name}`, { params }),
+    // Same-origin link; the browser sends the session cookie with it.
+    csvUrl: (name, params) => {
+      const qs = new URLSearchParams(Object.entries({ ...params, format: "csv" }).filter(([, v]) => v !== "" && v != null));
+      return `${BASE_URL}/reports/${name}?${qs}`;
+    },
+  },
   schools: {
     list: (params) => request("GET", "/schools", { params }),
     create: (body) => request("POST", "/schools", { body }),

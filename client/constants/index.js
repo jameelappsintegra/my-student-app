@@ -82,13 +82,15 @@ export const TRANSPORT = {
   other: "Other",
 };
 
+// `cell` classes repeat the colour on hover: daisyUI's .btn:hover would
+// otherwise win, and phones keep the hover state after a tap.
 export const ATTENDANCE = {
-  present: { label: "Present", short: "P", badge: "badge-success", cell: "bg-success text-success-content" },
-  absent: { label: "Absent", short: "A", badge: "badge-error", cell: "bg-error text-error-content" },
-  late: { label: "Late", short: "L", badge: "badge-warning", cell: "bg-warning text-warning-content" },
-  half_day: { label: "Half day", short: "½", badge: "badge-warning", cell: "bg-warning/60" },
-  leave: { label: "Leave", short: "Lv", badge: "badge-info", cell: "bg-info text-info-content" },
-  holiday: { label: "Holiday", short: "H", badge: "badge-ghost", cell: "bg-base-300 text-slate-500" },
+  present: { label: "Present", short: "P", badge: "badge-success", cell: "bg-success text-success-content hover:bg-success" },
+  absent: { label: "Absent", short: "A", badge: "badge-error", cell: "bg-error text-error-content hover:bg-error" },
+  late: { label: "Late", short: "L", badge: "badge-warning", cell: "bg-warning text-warning-content hover:bg-warning" },
+  half_day: { label: "Half day", short: "½", badge: "badge-warning", cell: "bg-warning/60 hover:bg-warning/60" },
+  leave: { label: "Leave", short: "Lv", badge: "badge-info", cell: "bg-info text-info-content hover:bg-info" },
+  holiday: { label: "Holiday", short: "H", badge: "badge-ghost", cell: "bg-base-300 text-slate-500 hover:bg-base-300" },
 };
 
 export const PAYMENT_METHODS = {
