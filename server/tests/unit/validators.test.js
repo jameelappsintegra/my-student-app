@@ -127,3 +127,11 @@ describe("list validators", () => {
     expect(s.updateStudent.safeParse({ admissionNumber: "X" }).success).toBe(false);
   });
 });
+
+test("impossible calendar dates are rejected instead of rolling over", () => {
+  const { createAdmission } = require("../../src/validators/admission");
+  const base = { school: "64b7f0f0f0f0f0f0f0f0f0f0", firstName: "A", lastName: "B", gender: "male", address: "x", classApplied: "2", academicYear: "2026-2027", father: { name: "F", phone: "9876543210" } };
+  expect(createAdmission.safeParse({ ...base, dateOfBirth: "2016-02-31" }).success).toBe(false);
+  expect(createAdmission.safeParse({ ...base, dateOfBirth: "2016-02-29" }).success).toBe(true);
+  expect(createAdmission.safeParse({ ...base, dateOfBirth: "2015-02-29" }).success).toBe(false);
+});

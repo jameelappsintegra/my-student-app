@@ -1,14 +1,22 @@
 const service = require("../services/studentService");
-const { openStream } = require("../services/photoService");
+const { sendPhoto } = require("../services/photoService");
 const { sendSuccess } = require("../utils/response");
 
 exports.list = async (req, res) => {
-  const { items, pagination } = await service.listStudents(req.valid.query);
+  const { items, pagination } = await service.listStudents(req.valid.query, req.user);
   sendSuccess(res, { message: "Students retrieved successfully", data: items, pagination });
 };
 
+// Personal details are hidden unless a share includes them.
+const PERSONAL = ["address", "phone", "email", "father", "mother", "guardian", "emergencyContact", "dateOfBirth", "transport", "busRoute", "bloodGroup", "nationality", "previousSchool"];
+
 exports.get = async (req, res) => {
-  sendSuccess(res, { message: "Student retrieved", data: await service.getStudent(req.params.id) });
+  const student = (await service.getStudent(req.params.id)).toJSON();
+  if (req.share) {
+    if (!req.share.scopes.includes("personal")) for (const k of PERSONAL) delete student[k];
+    student.sharedAccess = req.share;
+  }
+  sendSuccess(res, { message: "Student retrieved", data: student });
 };
 
 exports.create = async (req, res) => {
@@ -56,15 +64,5 @@ exports.deletePhoto = async (req, res) => {
 
 exports.getPhoto = async (req, res, next) => {
   const photo = await service.photoFor(req.params.id);
-  const etag = `"${photo.fileId}"`;
-  res.set({
-    "Content-Type": "image/jpeg",
-    // Personal data: cache in the viewer's browser only, never in shared caches.
-    "Cache-Control": "private, max-age=86400",
-    ETag: etag,
-  });
-  if (req.get("if-none-match") === etag) return res.status(304).end();
-  const stream = openStream(photo.fileId);
-  stream.once("error", next);
-  return stream.pipe(res);
+  return sendPhoto(req, res, next, photo);
 };

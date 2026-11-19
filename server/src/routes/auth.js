@@ -88,6 +88,27 @@ function authRouter({ loginLimit = loginRateLimitMax } = {}) {
     })
   );
 
+  // Change your own password; signs out your other sessions.
+  router.post(
+    "/password",
+    requireAuth,
+    validate(require("../validators/users").changePassword),
+    h(async (req, res) => {
+      const User = require("../models/User");
+      const Session = require("../models/Session");
+      const bcrypt = require("bcryptjs");
+      const user = await User.findById(req.user._id).select("+passwordHash");
+      if (!(await bcrypt.compare(req.valid.body.currentPassword, user.passwordHash))) {
+        throw ApiError.badRequest("Validation failed", [{ field: "currentPassword", message: "Your current password is incorrect" }]);
+      }
+      user.passwordHash = await auth.hashPassword(req.valid.body.newPassword);
+      await user.save();
+      await Session.deleteMany({ user: user._id, _id: { $ne: req.session._id } });
+      req.log.info({ event: "auth.password.change", userId: user.id }, "Password changed");
+      sendSuccess(res, { message: "Password changed. Other devices have been signed out." });
+    })
+  );
+
   router.get(
     "/me",
     requireAuth,

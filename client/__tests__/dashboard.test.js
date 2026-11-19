@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import Dashboard from "../pages/index";
+import Dashboard from "../components/home/AdminDashboard";
 import { api } from "../services/api";
 
 jest.mock("next/dynamic", () => () => {

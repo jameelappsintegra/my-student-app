@@ -79,7 +79,7 @@ async function getSummary({ school } = {}) {
   // Latest day with attendance marked (today on a school day).
   const latest = await Attendance.findOne({ ...scope, status: { $ne: "holiday" } }).sort({ date: -1 }).select("date").lean();
   const [schools, bySchool, attendance, fees] = await Promise.all([
-    School.find().select("name code active").sort({ name: 1 }).lean(),
+    School.find(schoolId ? { _id: schoolId } : {}).select("name code active").sort({ name: 1 }).lean(),
     Student.aggregate([
       { $match: { deletedAt: null, status: "active" } },
       { $group: { _id: "$school", count: { $sum: 1 } } },

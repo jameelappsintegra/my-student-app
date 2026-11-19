@@ -2,7 +2,7 @@ const service = require("../services/schoolService");
 const { sendSuccess } = require("../utils/response");
 
 exports.list = async (req, res) => {
-  const { items, pagination } = await service.listSchools(req.valid.query);
+  const { items, pagination } = await service.listSchools(req.valid.query, req.user);
   sendSuccess(res, { message: "Schools retrieved successfully", data: items, pagination });
 };
 exports.get = async (req, res) => {

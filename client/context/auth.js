@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import { api } from "../services/api";
 import { Loading } from "../components/common";
 
-const AuthContext = createContext({ user: null, signOut: async () => {} });
+const AuthContext = createContext({ user: null, signOut: async () => {}, can: () => true, setUser: () => {} });
 export const useAuth = () => useContext(AuthContext);
 
 const PUBLIC_PAGES = ["/login"];
@@ -53,6 +53,16 @@ export function AuthProvider({ children }) {
     return <Loading label={state.checked ? "Redirecting to sign in…" : "Checking your session…"} />;
   }
   return (
-    <AuthContext.Provider value={{ user: state.user, signOut }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider
+      value={{
+        user: state.user,
+        signOut,
+        // UI convenience only: the API enforces every permission itself.
+        can: (perm) => Boolean(state.user?.permissions?.includes(perm)),
+        setUser: (user) => setState((s) => ({ ...s, user })),
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
   );
 }

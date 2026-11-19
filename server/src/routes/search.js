@@ -7,11 +7,12 @@ const { validate } = require("../middleware/validate");
 const v = require("../validators/records");
 const h = require("../utils/asyncHandler");
 const { sendSuccess } = require("../utils/response");
+const { scoped } = require("../middleware/authorize");
 
 // Global search box: quick name / admission-number matches across schools.
 router.get("/", validate(v.search, "query"), h(async (req, res) => {
   const { q, limit } = req.valid.query;
-  const items = await Student.find({ deletedAt: null, ...searchFilter(q) })
+  const items = await Student.find(scoped(req.user, { deletedAt: null, ...searchFilter(q) }))
     .select("admissionNumber firstName middleName lastName className section school status photo")
     .populate("school", "name code")
     .sort({ lastName: 1, firstName: 1 })

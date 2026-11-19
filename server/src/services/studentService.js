@@ -8,12 +8,13 @@ const { toPublic } = require("../utils/serialize");
 const { nextAdmissionNumber } = require("./admissionNumbers");
 const { requireActiveSchool } = require("./schoolService");
 const photos = require("./photoService");
+const { scoped } = require("../middleware/authorize");
 
 const notDeleted = { deletedAt: null };
 const LIST_FIELDS =
   "admissionNumber school firstName middleName lastName gender dateOfBirth className section rollNumber academicYear status photo";
 
-async function listStudents(q) {
+async function listStudents(q, user) {
   const filter = { ...notDeleted };
   if (q.school) filter.school = q.school;
   if (q.className) filter.className = q.className;
@@ -21,16 +22,18 @@ async function listStudents(q) {
   if (q.status) filter.status = q.status;
   if (q.academicYear) filter.academicYear = q.academicYear;
   if (q.search) Object.assign(filter, searchFilter(q.search));
+  // Teachers and parents only ever see their own students.
+  const where = user ? scoped(user, filter) : filter;
 
   const [items, total] = await Promise.all([
-    Student.find(filter)
+    Student.find(where)
       .select(LIST_FIELDS)
       .populate("school", "name code")
       .sort(parseSort(q.sort))
       .skip((q.page - 1) * q.limit)
       .limit(q.limit)
       .lean(),
-    Student.countDocuments(filter),
+    Student.countDocuments(where),
   ]);
   return {
     items: items.map((s) => studentPublic(toPublic(s))),

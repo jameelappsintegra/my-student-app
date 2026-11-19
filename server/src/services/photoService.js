@@ -3,10 +3,11 @@ const sharp = require("sharp");
 const ApiError = require("../utils/ApiError");
 
 const BUCKET = "studentPhotos";
+const USER_BUCKET = "userPhotos";
 const ALLOWED = new Set(["jpeg", "png", "webp", "heif", "avif"]);
 const OUTPUT_SIZE = 512;
 
-const bucket = () => new mongoose.mongo.GridFSBucket(mongoose.connection.db, { bucketName: BUCKET });
+const bucket = (name = BUCKET) => new mongoose.mongo.GridFSBucket(mongoose.connection.db, { bucketName: name });
 
 // Decodes the upload (rejecting anything that is not a real image),
 // crops it to a square, and re-encodes it as JPEG. Re-encoding drops EXIF
@@ -28,12 +29,12 @@ async function normalise(buffer) {
     .toBuffer();
 }
 
-async function store(buffer, studentId) {
+async function store(buffer, ownerId, bucketName = BUCKET) {
   const jpeg = await normalise(buffer);
   return new Promise((resolve, reject) => {
-    const upload = bucket().openUploadStream(`${studentId}.jpg`, {
+    const upload = bucket(bucketName).openUploadStream(`${ownerId}.jpg`, {
       contentType: "image/jpeg",
-      metadata: { student: studentId },
+      metadata: { owner: ownerId },
     });
     upload.once("error", reject);
     upload.once("finish", () => resolve({ fileId: upload.id, size: jpeg.length }));
@@ -41,18 +42,28 @@ async function store(buffer, studentId) {
   });
 }
 
-async function remove(fileId) {
+async function remove(fileId, bucketName = BUCKET) {
   if (!fileId) return;
   try {
-    await bucket().delete(fileId);
+    await bucket(bucketName).delete(fileId);
   } catch (err) {
     // Already gone: nothing to clean up.
     if (!/FileNotFound|File not found/i.test(err.message)) throw err;
   }
 }
 
-function openStream(fileId) {
-  return bucket().openDownloadStream(fileId);
+function openStream(fileId, bucketName = BUCKET) {
+  return bucket(bucketName).openDownloadStream(fileId);
 }
 
-module.exports = { store, remove, openStream, normalise, BUCKET };
+// Streams a stored JPEG with private caching and ETag support.
+function sendPhoto(req, res, next, photo, bucketName = BUCKET) {
+  const etag = `"${photo.fileId}"`;
+  res.set({ "Content-Type": "image/jpeg", "Cache-Control": "private, max-age=86400", ETag: etag });
+  if (req.get("if-none-match") === etag) return res.status(304).end();
+  const stream = openStream(photo.fileId, bucketName);
+  stream.once("error", next);
+  return stream.pipe(res);
+}
+
+module.exports = { store, remove, openStream, sendPhoto, normalise, BUCKET, USER_BUCKET };

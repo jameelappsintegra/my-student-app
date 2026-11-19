@@ -99,7 +99,7 @@ function ResultDialog({ studentId, existing, suggestedSubjects, onClose, onSaved
   );
 }
 
-export default function AcademicsTab({ studentId, results, onChanged }) {
+export default function AcademicsTab({ studentId, results, onChanged, canEdit = true }) {
   const [dialog, setDialog] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -109,7 +109,7 @@ export default function AcademicsTab({ studentId, results, onChanged }) {
     <div className="space-y-4">
       <div className="flex justify-between items-center gap-2">
         <p className="text-sm text-slate-500">Marks by exam. Grades use the 9-point scale (A1 = 91%+); 33% is the pass mark.</p>
-        <button className="btn btn-primary btn-sm shrink-0" onClick={() => setDialog({ kind: "edit" })}>Add marks</button>
+        {canEdit && <button className="btn btn-primary btn-sm shrink-0" onClick={() => setDialog({ kind: "edit" })}>Add marks</button>}
       </div>
       {results.length === 0 ? (
         <Card><EmptyState title="No exam results yet" message="Add marks after each exam to build this student's record." /></Card>
@@ -144,10 +144,10 @@ export default function AcademicsTab({ studentId, results, onChanged }) {
               </table>
             </div>
             {r.remarks && <p className="text-sm text-slate-600 mt-3">“{r.remarks}”</p>}
-            <div className="flex gap-2 justify-end mt-3">
+            {canEdit && <div className="flex gap-2 justify-end mt-3">
               <button className="btn btn-sm" onClick={() => setDialog({ kind: "edit", result: r })}>Edit</button>
               <button className="btn btn-sm btn-ghost text-error" onClick={() => { setError(null); setDialog({ kind: "delete", result: r }); }}>Delete</button>
-            </div>
+            </div>}
           </Card>
         ))
       )}

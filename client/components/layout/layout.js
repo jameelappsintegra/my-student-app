@@ -3,7 +3,8 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import Sidemenu, { isActive } from "../sideMenu/sideMenu";
-import menuItems from "../../data/data";
+import { tabItems } from "../../data/data";
+import { useAuth } from "../../context/auth";
 import GlobalSearch from "../search/GlobalSearch";
 import Icon from "../common/Icon";
 
@@ -11,6 +12,8 @@ import Icon from "../common/Icon";
 // full-screen search, like a native app.
 const Layout = ({ title, back, children }) => {
   const router = useRouter();
+  const { can, user } = useAuth();
+  const canSearch = can("students.search");
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -45,23 +48,25 @@ const Layout = ({ title, back, children }) => {
               </label>
             )}
             <span className="font-semibold text-slate-900 truncate flex-1 px-1">{title || "EduPro"}</span>
-            <button className="btn btn-ghost btn-sm btn-circle" aria-label="Search students" onClick={() => setSearchOpen(true)}>
-              <Icon name="search" />
-            </button>
+            {canSearch && (
+              <button className="btn btn-ghost btn-sm btn-circle" aria-label="Search students" onClick={() => setSearchOpen(true)}>
+                <Icon name="search" />
+              </button>
+            )}
           </header>
 
           {/* Desktop search bar */}
-          <div className="hidden lg:block sticky top-0 z-30 bg-slate-50/95 backdrop-blur border-b border-slate-200 px-8 py-3">
-            <GlobalSearch className="max-w-xl" />
-          </div>
+          {canSearch && (
+            <div className="hidden lg:block sticky top-0 z-30 bg-slate-50/95 backdrop-blur border-b border-slate-200 px-8 py-3">
+              <GlobalSearch className="max-w-xl" />
+            </div>
+          )}
 
           <main className="flex-1 p-4 md:p-8 pb-24 lg:pb-8 max-w-6xl w-full">{children}</main>
 
           {/* Phone bottom tabs */}
           <nav className="btm-nav lg:hidden z-30 border-t border-slate-200 bg-white h-16 pb-[env(safe-area-inset-bottom)] box-content" aria-label="Tabs">
-            {menuItems
-              .filter((m) => m.mobile)
-              .map((item) => {
+            {tabItems(can, user?.role).map((item) => {
                 const active = isActive(router.pathname, item.link);
                 return (
                   <Link key={item.link} href={item.link}>

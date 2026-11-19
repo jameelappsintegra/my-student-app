@@ -73,7 +73,7 @@ function FeeDialog({ studentId, onClose, onSaved }) {
   );
 }
 
-export default function FeesTab({ studentId, fees, onChanged }) {
+export default function FeesTab({ studentId, fees, onChanged, canEdit = true }) {
   const [dialog, setDialog] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -98,7 +98,7 @@ export default function FeesTab({ studentId, fees, onChanged }) {
           <span className={`badge ${s.status === "paid" ? "badge-success" : s.status === "overdue" ? "badge-error" : "badge-warning"}`}>
             {s.status === "paid" ? "All fees paid" : s.status === "overdue" ? `${s.overdueCount} overdue` : "Fees due"}
           </span>
-          <button className="btn btn-primary btn-sm" onClick={() => setDialog({ kind: "fee" })}>Add fee</button>
+          {canEdit && <button className="btn btn-primary btn-sm" onClick={() => setDialog({ kind: "fee" })}>Add fee</button>}
         </div>
       </Card>
 
@@ -127,14 +127,14 @@ export default function FeesTab({ studentId, fees, onChanged }) {
                         {money(p.amount)} by {PAYMENT_METHODS[p.method]} on {formatDate(p.paidAt)}
                         <span className="block text-xs text-slate-500 font-mono">{p.receiptNumber}{p.reference ? ` · ${p.reference}` : ""}</span>
                       </span>
-                      <button className="btn btn-ghost btn-xs text-error" onClick={() => { setError(null); setDialog({ kind: "removePayment", inv, p }); }}>Remove</button>
+                      {canEdit && <button className="btn btn-ghost btn-xs text-error" onClick={() => { setError(null); setDialog({ kind: "removePayment", inv, p }); }}>Remove</button>}
                     </li>
                   ))}
                 </ul>
               )}
               <div className="flex gap-2 justify-end mt-3">
-                {inv.balance > 0 && <button className="btn btn-sm btn-primary" onClick={() => setDialog({ kind: "pay", inv })}>Record payment</button>}
-                {inv.payments.length === 0 && <button className="btn btn-sm btn-ghost text-error" onClick={() => { setError(null); setDialog({ kind: "deleteFee", inv }); }}>Delete</button>}
+                {canEdit && inv.balance > 0 && <button className="btn btn-sm btn-primary" onClick={() => setDialog({ kind: "pay", inv })}>Record payment</button>}
+                {canEdit && inv.payments.length === 0 && <button className="btn btn-sm btn-ghost text-error" onClick={() => { setError(null); setDialog({ kind: "deleteFee", inv }); }}>Delete</button>}
               </div>
             </Card>
           );

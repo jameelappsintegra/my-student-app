@@ -11,6 +11,7 @@ import FeesTab from "../../../components/student/FeesTab";
 import useApi from "../../../hooks/useApi";
 import { api } from "../../../services/api";
 import { fullName } from "../../../constants";
+import { useAuth } from "../../../context/auth";
 
 const TABS = [
   ["overview", "Overview"],
@@ -20,22 +21,24 @@ const TABS = [
   ["fees", "Fees"],
 ];
 
-// One request for the student and its three record summaries.
-async function loadAll(id) {
+// The student and its record summaries (fees only for roles that see them).
+async function loadAll(id, withFees) {
   const [student, attendance, results, fees] = await Promise.all([
     api.students.get(id),
     api.students.attendance(id),
     api.students.results(id),
-    api.students.fees(id),
+    withFees ? api.students.fees(id) : Promise.resolve({ data: null }),
   ]);
   return { data: { student: student.data, attendance: attendance.data, results: results.data, fees: fees.data } };
 }
 
 export default function StudentProfile() {
   const router = useRouter();
+  const { can } = useAuth();
+  const tabs = TABS.filter(([k]) => k !== "fees" || can("fees.view"));
   const { id, tab: tabParam, added, saved } = router.query;
-  const tab = TABS.some(([k]) => k === tabParam) ? tabParam : "overview";
-  const { data, loading, error, reload } = useApi(() => (id ? loadAll(id) : new Promise(() => {})), [id]);
+  const tab = tabs.some(([k]) => k === tabParam) ? tabParam : "overview";
+  const { data, loading, error, reload } = useApi(() => (id ? loadAll(id, can("fees.view")) : new Promise(() => {})), [id]);
   const [student, setStudent] = useState(null);
   const [notice, setNotice] = useState(null);
 
@@ -78,7 +81,7 @@ export default function StudentProfile() {
           />
           <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
             <div className="tabs tabs-boxed bg-white border border-slate-200 inline-flex flex-nowrap" role="tablist" aria-label="Student details">
-              {TABS.map(([k, label]) => (
+              {tabs.map(([k, label]) => (
                 <button
                   key={k}
                   role="tab"
@@ -91,12 +94,12 @@ export default function StudentProfile() {
               ))}
             </div>
           </div>
-          <div role="tabpanel" aria-label={TABS.find(([k]) => k === tab)[1]}>
+          <div role="tabpanel" aria-label={tabs.find(([k]) => k === tab)[1]}>
             {tab === "overview" && <OverviewTab s={s} />}
-            {tab === "academics" && <AcademicsTab studentId={s.id} results={data.results} onChanged={changed} />}
-            {tab === "attendance" && <AttendanceTab studentId={s.id} yearSummary={data.attendance} onChanged={changed} />}
+            {tab === "academics" && <AcademicsTab studentId={s.id} results={data.results} onChanged={changed} canEdit={can("results.manage")} />}
+            {tab === "attendance" && <AttendanceTab studentId={s.id} yearSummary={data.attendance} onChanged={changed} canEdit={can("attendance.mark")} />}
             {tab === "parents" && <ParentsTab s={s} />}
-            {tab === "fees" && <FeesTab studentId={s.id} fees={data.fees} onChanged={changed} />}
+            {tab === "fees" && data.fees && <FeesTab studentId={s.id} fees={data.fees} onChanged={changed} canEdit={can("fees.manage")} />}
           </div>
         </div>
       )}

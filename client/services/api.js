@@ -60,6 +60,29 @@ async function request(method, path, { body, params, form } = {}) {
 }
 
 export const api = {
+  me: {
+    classes: () => request("GET", "/me/classes"),
+    children: () => request("GET", "/me/children"),
+    uploadPhoto: (file) => {
+      const form = new FormData();
+      form.append("photo", file);
+      return request("PUT", "/me/photo", { form });
+    },
+    removePhoto: () => request("DELETE", "/me/photo"),
+    changePassword: (currentPassword, newPassword) => request("POST", "/auth/password", { body: { currentPassword, newPassword } }),
+  },
+  users: {
+    list: (params) => request("GET", "/users", { params }),
+    create: (body) => request("POST", "/users", { body }),
+    update: (id, body) => request("PUT", `/users/${id}`, { body }),
+    resetPassword: (id, password) => request("POST", `/users/${id}/password`, { body: { password } }),
+    remove: (id) => request("DELETE", `/users/${id}`),
+    uploadPhoto: (id, file) => {
+      const form = new FormData();
+      form.append("photo", file);
+      return request("PUT", `/users/${id}/photo`, { form });
+    },
+  },
   auth: {
     me: () => request("GET", "/auth/me"),
     login: (username, password) =>

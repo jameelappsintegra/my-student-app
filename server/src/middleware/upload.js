@@ -18,4 +18,19 @@ function photoUpload(req, res, next) {
   });
 }
 
-module.exports = { photoUpload, MAX_BYTES };
+// One CSV/ZIP/XML file (bulk import, Aadhaar offline e-KYC), up to 2 MB.
+const singleFile = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024, files: 1, fields: 5, parts: 6 },
+}).single("file");
+
+function fileUpload(req, res, next) {
+  singleFile(req, res, (err) => {
+    if (!err) return next();
+    if (err.code === "LIMIT_FILE_SIZE") return next(new ApiError(413, "The file must be 2 MB or smaller."));
+    if (err instanceof multer.MulterError) return next(ApiError.badRequest('Send one file in the "file" field.'));
+    return next(err);
+  });
+}
+
+module.exports = { photoUpload, fileUpload, MAX_BYTES };

@@ -4,10 +4,14 @@ import { Avatar, ConfirmDialog, Dialog } from "../common";
 import Icon from "../common/Icon";
 import { api } from "../../services/api";
 import { STUDENT_STATUS, ageFrom, classLabel, fullName, money } from "../../constants";
+import { useAuth } from "../../context/auth";
 
 const STATUSES = ["active", "inactive", "transferred", "withdrawn", "graduated"];
 
 export default function ProfileHeader({ student, attendance, results, fees, onChange, onDeleted }) {
+  const { can } = useAuth();
+  const canManage = can("students.manage");
+  const canPhoto = can("students.photo");
   const fileRef = useRef(null);
   const [photoBusy, setPhotoBusy] = useState(false);
   const [photoError, setPhotoError] = useState(null);
@@ -56,14 +60,14 @@ export default function ProfileHeader({ student, attendance, results, fees, onCh
       <div className="flex flex-col sm:flex-row gap-3 sm:gap-5 sm:items-center">
         <div className="relative self-center sm:self-auto">
           <Avatar student={student} size="w-20 h-20 sm:w-28 sm:h-28" text="text-2xl sm:text-3xl" />
-          <button
+          {canPhoto && <button
             className={`btn btn-circle btn-sm btn-primary absolute -bottom-1 -right-1 ${photoBusy ? "loading" : ""}`}
             aria-label={student.photoUrl ? "Change photo" : "Add photo"}
             onClick={() => (student.photoUrl ? setDialog("photo") : fileRef.current?.click())}
             disabled={photoBusy}
           >
             {!photoBusy && <Icon name="camera" className="w-4 h-4" />}
-          </button>
+          </button>}
           <input
             ref={fileRef}
             type="file"
@@ -90,7 +94,7 @@ export default function ProfileHeader({ student, attendance, results, fees, onCh
             {student.bloodGroup && <span className="badge badge-outline">Blood {student.bloodGroup}</span>}
           </div>
         </div>
-        <div className="flex gap-2 justify-center sm:flex-col">
+        {canManage && <div className="flex gap-2 justify-center sm:flex-col">
           <Link href={`/students/${student.id}/edit`}>
             <a className="btn btn-sm gap-1"><Icon name="edit" className="w-4 h-4" />Edit</a>
           </Link>
@@ -98,7 +102,7 @@ export default function ProfileHeader({ student, attendance, results, fees, onCh
           <button className="btn btn-sm btn-ghost text-error gap-1" onClick={() => setDialog("delete")}>
             <Icon name="trash" className="w-4 h-4" />Delete
           </button>
-        </div>
+        </div>}
       </div>
       {photoError && <div className="alert alert-error mt-4 py-2" role="alert"><span>{photoError}</span></div>}
 
@@ -115,7 +119,7 @@ export default function ProfileHeader({ student, attendance, results, fees, onCh
         </div>
         <div className="rounded-lg bg-slate-50 p-2 sm:p-3">
           <dt className="text-xs text-slate-500">Fees due</dt>
-          <dd className={`text-base sm:text-lg font-semibold leading-tight ${fees?.summary.overdue ? "text-error" : "text-slate-900"}`}>
+          <dd className={`text-base sm:text-lg font-semibold leading-tight ${fees?.summary?.overdue ? "text-error" : "text-slate-900"}`}>
             {fees ? (fees.summary.balance ? money(fees.summary.balance) : "Paid") : "—"}
           </dd>
         </div>

@@ -5,8 +5,9 @@ const ApiError = require("../utils/ApiError");
 const { buildPagination, escapeRegex } = require("../utils/query");
 const { toPublic } = require("../utils/serialize");
 
-async function listSchools(q) {
-  const filter = {};
+async function listSchools(q, user) {
+  // Teachers see only the schools they teach in.
+  const filter = user ? { ...require("../middleware/authorize").schoolScope(user) } : {};
   if (q.search) {
     const rx = new RegExp(escapeRegex(q.search), "i");
     filter.$or = [{ name: rx }, { code: rx }, { city: rx }];

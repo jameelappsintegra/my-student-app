@@ -12,7 +12,7 @@ function monthBounds(y, m) {
   return { from: `${y}-${pad(m + 1)}-01`, to: `${y}-${pad(m + 1)}-${pad(last)}`, last };
 }
 
-export default function AttendanceTab({ studentId, yearSummary, onChanged }) {
+export default function AttendanceTab({ studentId, yearSummary, onChanged, canEdit = true }) {
   const now = new Date();
   const [ym, setYm] = useState({ y: now.getFullYear(), m: now.getMonth() });
   const { from, to, last } = monthBounds(ym.y, ym.m);
@@ -93,12 +93,12 @@ export default function AttendanceTab({ studentId, yearSummary, onChanged }) {
                   <button
                     key={date}
                     role="gridcell"
-                    disabled={future}
+                    disabled={future || !canEdit}
                     onClick={() => { setDErr(null); setDay(date); }}
                     aria-label={`${date}: ${rec ? ATTENDANCE[rec.status].label : "not marked"}`}
                     className={`aspect-square rounded-md text-xs sm:text-sm flex flex-col items-center justify-center leading-tight ${
                       rec ? ATTENDANCE[rec.status].cell : "bg-slate-50 text-slate-400"
-                    } ${future ? "opacity-40" : "hover:ring-2 hover:ring-primary/40"} ${date === today ? "ring-2 ring-primary" : ""}`}
+                    } ${future ? "opacity-40" : canEdit ? "hover:ring-2 hover:ring-primary/40" : "cursor-default"} ${date === today ? "ring-2 ring-primary" : ""}`}
                   >
                     <span className="font-medium">{Number(date.slice(8))}</span>
                     {rec && <span className="text-[10px] opacity-80">{ATTENDANCE[rec.status].short}</span>}
@@ -107,7 +107,7 @@ export default function AttendanceTab({ studentId, yearSummary, onChanged }) {
               })}
             </div>
             <p className="text-xs text-slate-500 mt-3">
-              This month: {data.summary.present} present, {data.summary.absent} absent, {data.summary.late} late, {data.summary.leave} on leave. Tap a day to mark or correct it.
+              This month: {data.summary.present} present, {data.summary.absent} absent, {data.summary.late} late, {data.summary.leave} on leave. {canEdit ? "Tap a day to mark or correct it." : ""}
             </p>
           </>
         )}

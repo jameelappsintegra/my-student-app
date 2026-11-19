@@ -39,8 +39,16 @@ const academicYear = z
     return b === a + 1;
   }, "Academic year must span consecutive years");
 
+// "2016-02-31" must be rejected, not rolled over to 2 March.
+const toRealDate = (v) => {
+  if (typeof v !== "string" || !v) return v;
+  const d = new Date(v);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v) && (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== v)) return new Date(NaN);
+  return d;
+};
+
 const dateOfBirth = z.preprocess(
-  (v) => (typeof v === "string" && v ? new Date(v) : v),
+  toRealDate,
   z
     .date({
       required_error: "Date of birth is required",

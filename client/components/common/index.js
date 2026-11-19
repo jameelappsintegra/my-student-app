@@ -97,14 +97,18 @@ export function Pagination({ pagination, onPage }) {
 const AVATAR_TONES = ["bg-indigo-100 text-indigo-700", "bg-sky-100 text-sky-700", "bg-teal-100 text-teal-700", "bg-amber-100 text-amber-700", "bg-rose-100 text-rose-700", "bg-violet-100 text-violet-700"];
 
 // Student photo, or initials on a tone picked from the name when there is none.
-export function Avatar({ student, size = "w-10 h-10", text = "text-sm" }) {
-  const initials = `${student.firstName?.[0] || ""}${student.lastName?.[0] || ""}`.toUpperCase();
-  if (student.photoUrl) {
+export function Avatar({ student, person, size = "w-10 h-10", text = "text-sm" }) {
+  // `person` is a user ({ name, photoUrl }); `student` has first/last names.
+  const who = student || person || {};
+  const parts = who.name ? who.name.trim().split(/\s+/) : [who.firstName, who.lastName];
+  const initials = `${parts[0]?.[0] || ""}${parts.length > 1 ? parts[parts.length - 1]?.[0] || "" : ""}`.toUpperCase();
+  const label = who.name || `${who.firstName} ${who.lastName}`;
+  if (who.photoUrl) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        src={student.photoUrl}
-        alt={`Photo of ${student.firstName} ${student.lastName}`}
+        src={who.photoUrl}
+        alt={`Photo of ${label}`}
         className={`${size} rounded-full object-cover bg-slate-100 shrink-0`}
         loading="lazy"
       />
@@ -183,5 +187,14 @@ export function Details({ items }) {
         </div>
       ))}
     </dl>
+  );
+}
+
+// Shown when someone opens a page their role can't use.
+export function NoAccess() {
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 p-5">
+      <EmptyState title="You don't have access to this page" message="Ask your school's administrator if you think you should." />
+    </div>
   );
 }
