@@ -1,52 +1,24 @@
+// Navigation. Items show only to people with the permission (the API checks
+// again). `mobile` items appear in the phone's bottom tab bar.
 const menuItems = [
-  {
-    menu_Id: "1",
-    menu_name: "Dashboard",
-    link: "/",
-  },
-  {
-    menu_Id: "2",
-    menu_name: "Class",
-    link: "/myclass",
-  },
-  {
-    menu_Id: "3",
-    menu_name: "Academic",
-    link: "/",
-  },
-  {
-    menu_Id: "4",
-    menu_name: "Attendance",
-    link: "/attendance",
-  },
-  {
-    menu_Id: "5",
-    menu_name: "Personal",
-    link: "/personaldetails",
-  },
-  {
-    menu_Id: "6",
-    menu_name: "Parents",
-    link: "/parents",
-  },
-  {
-    menu_Id: "7",
-    menu_name: "New Admission",
-    link: "/newadmission",
-  },
+  { name: "Home", short: "Home", link: "/", icon: "home", mobile: true },
+  { name: "Students", short: "Students", link: "/students", icon: "students", mobile: true, perm: "students.search" },
+  { name: "Attendance", short: "Attendance", link: "/attendance", icon: "calendar", mobile: true, perm: "attendance.mark" },
+  { name: "Admissions", short: "Admissions", link: "/admissions", icon: "admissions", mobile: true, perm: "admissions.manage" },
+  { name: "New Admission", link: "/newadmission", icon: "plus", perm: "admissions.manage" },
+  { name: "Reports", short: "Reports", link: "/reports", icon: "report", perm: "reports.view", mobile: "principal" },
+  { name: "Schools", link: "/schools", icon: "schools", perm: "schools.manage" },
+  { name: "Import students", link: "/students/import", icon: "upload", perm: "students.import" },
+  { name: "Shared records", link: "/shares", icon: "share", perm: ["shares.request", "shares.approve"] },
+  { name: "Users", link: "/users", icon: "users", perm: "users.manage" },
+  // Reached from the name in the sidebar; a bottom tab for parents.
+  { name: "My account", short: "Account", link: "/account", icon: "account", mobile: "parent", sidebar: false },
 ];
-export default menuItems;
 
-export const menuConfig = [
-  {
-    title: "Home",
-  },
-  {
-    title: "Services",
-    subItems: ["Cooking", "Cleaning"],
-  },
-  {
-    title: "Contact",
-    subItems: ["Phone", "Mail"],
-  },
-];
+const allowed = (can, perm) => !perm || (Array.isArray(perm) ? perm.some(can) : can(perm));
+export const visibleItems = (can) => menuItems.filter((m) => allowed(can, m.perm));
+export const sidebarItems = (can) => visibleItems(can).filter((m) => m.sidebar !== false);
+export const tabItems = (can, role) =>
+  visibleItems(can).filter((m) => m.mobile === true || m.mobile === role).slice(0, 5);
+
+export default menuItems;
