@@ -40,6 +40,15 @@ export function AuthProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPublic]);
 
+  // Role colour theme (admin indigo, principal teal, teacher green, parent orange).
+  useEffect(() => {
+    const role = state.user?.role;
+    const name = !role || role === "admin" ? "edupro" : `edupro-${role}`;
+    document.documentElement.setAttribute("data-theme", name);
+    const colors = { edupro: "#4f46e5", "edupro-principal": "#0f766e", "edupro-teacher": "#15803d", "edupro-parent": "#c2410c" };
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", colors[name]);
+  }, [state.user?.role]);
+
   const signOut = useCallback(async () => {
     try {
       await api.auth.logout();

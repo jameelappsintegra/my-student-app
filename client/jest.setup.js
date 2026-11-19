@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom";
 
-jest.mock("next/router", () => ({
-  useRouter: () => ({ pathname: "/", asPath: "/", push: jest.fn() }),
-}));
+// One stable router object, like Next's, so effects keyed on it don't loop.
+const router = { pathname: "/", asPath: "/", query: {}, push: jest.fn(), replace: jest.fn(), back: jest.fn() };
+jest.mock("next/router", () => ({ useRouter: () => router }));

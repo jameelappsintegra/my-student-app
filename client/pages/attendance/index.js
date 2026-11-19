@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import Layout from "../../components/layout/layout";
 import { Avatar, Card, EmptyState, ErrorState, Loading, Notice, PageHeader } from "../../components/common";
 import useSchools from "../../hooks/useSchools";
@@ -19,6 +20,7 @@ const load = () => {
 
 export default function AttendanceRegister() {
   const { schools } = useSchools();
+  const router = useRouter();
   const [where, setWhere] = useState({ school: "", className: "", section: "", date: todayIso() });
   const [state, setState] = useState({ loading: false, error: null, register: null });
   const [draft, setDraft] = useState({}); // studentId -> status
@@ -26,11 +28,18 @@ export default function AttendanceRegister() {
   const [notice, setNotice] = useState(null);
   const [saveError, setSaveError] = useState(null);
 
-  // Remember the teacher's last class (not the date).
+  // A link (teacher home) wins; otherwise the last class used (not the date).
   useEffect(() => {
-    const saved = load();
-    setWhere((w) => ({ ...w, school: saved.school || "", className: saved.className || "", section: saved.section || "" }));
-  }, []);
+    const q = router.query;
+    const saved = q.school ? q : load();
+    setWhere((w) => ({
+      ...w,
+      school: saved.school || "",
+      className: saved.className || "",
+      section: saved.section || "",
+      date: typeof q.date === "string" ? q.date : w.date,
+    }));
+  }, [router.query]);
   useEffect(() => {
     if (!where.school && schools.length === 1) setWhere((w) => ({ ...w, school: schools[0].id }));
   }, [schools, where.school]);

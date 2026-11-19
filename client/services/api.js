@@ -3,10 +3,12 @@
 const BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "/api").replace(/\/$/, "");
 
 export class ApiError extends Error {
-  constructor(message, { status, errors } = {}) {
+  constructor(message, { status, errors, data } = {}) {
     super(message);
     this.status = status;
     this.errors = errors || [];
+    // Some failures (CSV import) carry a full result to show.
+    this.data = data;
   }
 
   // { "father.phone": "Enter a valid phone number", ... }
@@ -54,6 +56,7 @@ async function request(method, path, { body, params, form } = {}) {
     throw new ApiError(json?.message || `Request failed (${res.status})`, {
       status: res.status,
       errors: json?.errors,
+      data: json?.data,
     });
   }
   return json;
@@ -100,11 +103,27 @@ export const api = {
       request("POST", `/admissions/${id}/enroll`, { body }),
   },
   search: (q) => request("GET", "/search", { params: { q } }),
+  shares: {
+    list: (box) => request("GET", "/shares", { params: { box } }),
+    request: (body) => request("POST", "/shares", { body }),
+    decide: (id, body) => request("POST", `/shares/${id}/decision`, { body }),
+    revoke: (id) => request("POST", `/shares/${id}/revoke`, { body: {} }),
+    withMe: () => request("GET", "/me/shared"),
+  },
+  identity: {
+    aadhaarOffline: (file, shareCode) => {
+      const form = new FormData();
+      form.append("shareCode", shareCode);
+      form.append("file", file);
+      return request("POST", "/identity/aadhaar-offline", { form });
+    },
+  },
   register: {
     get: (params) => request("GET", "/attendance/register", { params }),
     save: (body) => request("PUT", "/attendance/register", { body }),
   },
   reports: {
+    list: () => request("GET", "/reports"),
     get: (name, params) => request("GET", `/reports/${name}`, { params }),
     // Same-origin link; the browser sends the session cookie with it.
     csvUrl: (name, params) => {
@@ -131,6 +150,12 @@ export const api = {
       return request("PUT", `/students/${id}/photo`, { form });
     },
     removePhoto: (id) => request("DELETE", `/students/${id}/photo`),
+    importCsv: (file, dryRun) => {
+      const form = new FormData();
+      form.append("file", file);
+      return request("POST", "/students/import", { form, params: { dryRun } });
+    },
+    importTemplateUrl: () => `${BASE_URL}/students/import/template`,
     attendance: (id, params) => request("GET", `/students/${id}/attendance`, { params }),
     markAttendance: (id, date, status, note) =>
       request("PUT", `/students/${id}/attendance/${date}`, { body: { status, note } }),

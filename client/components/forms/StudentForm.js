@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Card } from "../common";
+import AadhaarFill from "./AadhaarFill";
 import useSchools from "../../hooks/useSchools";
 import { ApiError } from "../../services/api";
 import { BLOOD_GROUPS, CLASSES, GENDERS, TRANSPORT, academicYearOptions } from "../../constants";
@@ -103,7 +104,7 @@ function Field({ path, label, required, children, className = "", errors }) {
   );
 }
 
-export default function StudentForm({ initial, isNew, onSubmit, submitLabel }) {
+export default function StudentForm({ initial, isNew, onSubmit, submitLabel, onAadhaarPhoto }) {
   const { schools } = useSchools();
   const [f, setF] = useState(initial);
   const [errors, setErrors] = useState({});
@@ -155,9 +156,31 @@ export default function StudentForm({ initial, isNew, onSubmit, submitLabel }) {
     }
   };
 
+  const fillFromAadhaar = (d) => {
+    setF((s) => ({
+      ...s,
+      firstName: d.firstName || s.firstName,
+      middleName: d.middleName || s.middleName,
+      lastName: d.lastName || s.lastName,
+      dateOfBirth: d.dateOfBirth || s.dateOfBirth,
+      gender: d.gender || s.gender,
+      address: d.address || s.address,
+      father: d.father ? { ...s.father, name: d.father.name } : s.father,
+      guardian: d.guardian ? { ...s.guardian, name: d.guardian.name } : s.guardian,
+    }));
+    setErrors({});
+    if (d.photo) onAadhaarPhoto?.(d.photo);
+  };
+
   return (
     <form onSubmit={submit} noValidate className="space-y-5">
       {formError && <div className="alert alert-error" role="alert"><span>{formError.message}</span></div>}
+      {isNew && (
+        <div className="flex flex-wrap items-center gap-3 bg-white border border-slate-200 rounded-xl p-3">
+          <AadhaarFill onFill={fillFromAadhaar} />
+          <span className="text-sm text-slate-500">Save typing: read the name, date of birth, address and photo from the parent&apos;s Aadhaar offline e-KYC file.</span>
+        </div>
+      )}
 
       <Card title="School and class">
         <div className="grid gap-x-4 sm:grid-cols-2 lg:grid-cols-3">

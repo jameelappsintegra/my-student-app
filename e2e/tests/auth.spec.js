@@ -42,7 +42,7 @@ test.describe("signed out", () => {
 
 test("sign out ends the session everywhere", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1, name: "Dashboard" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Dashboard" })).toBeVisible(); // admin home
   await page.getByRole("button", { name: "Sign out" }).click();
   await expect(page).toHaveURL(/\/login$/);
   expect((await page.request.get("/api/dashboard")).status()).toBe(401);

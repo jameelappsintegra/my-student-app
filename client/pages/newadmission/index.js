@@ -5,6 +5,7 @@ import Layout from "../../components/layout/layout";
 import { Card, PageHeader } from "../../components/common";
 import { api, ApiError } from "../../services/api";
 import useSchools from "../../hooks/useSchools";
+import AadhaarFill from "../../components/forms/AadhaarFill";
 import {
   CLASSES,
   GENDERS,
@@ -208,6 +209,26 @@ const NewAdmission = () => {
             <span>{submitError.message}</span>
           </div>
         )}
+
+        <div className="flex flex-wrap items-center gap-3 bg-white border border-slate-200 rounded-xl p-3">
+          <AadhaarFill
+            onFill={(d) => {
+              setForm((f) => ({
+                ...f,
+                firstName: d.firstName || f.firstName,
+                middleName: d.middleName || f.middleName,
+                lastName: d.lastName || f.lastName,
+                dateOfBirth: d.dateOfBirth ? new Date(`${d.dateOfBirth}T00:00:00`) : f.dateOfBirth,
+                gender: d.gender || f.gender,
+                address: d.address || f.address,
+                father: d.father ? { ...f.father, name: d.father.name } : f.father,
+                guardian: d.guardian ? { ...f.guardian, name: d.guardian.name } : f.guardian,
+              }));
+              setErrors({});
+            }}
+          />
+          <span className="text-sm text-slate-500">Parents can share their child&apos;s Aadhaar offline e-KYC file to fill this in.</span>
+        </div>
 
         <Card title="Student details">
           <div className="grid gap-x-4 md:grid-cols-3">

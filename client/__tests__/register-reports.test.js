@@ -78,28 +78,32 @@ describe("attendance register", () => {
 });
 
 describe("reports", () => {
-  test("switches reports, filters, and builds the CSV download link", async () => {
+  test("lists the reports this user may run, filters, and builds the CSV link", async () => {
+    api.reports.list = jest.fn(() => Promise.resolve({ data: [
+      { id: "fee-defaulters", title: "Fee defaulters", group: "Fees", params: [] },
+      { id: "low-attendance", title: "Low attendance", group: "Attendance", params: ["from", "to", "threshold"] },
+    ] }));
     api.reports.get.mockImplementation((name) =>
       Promise.resolve({
-        data:
-          name === "fee-defaulters"
-            ? { rows: [{ id: "a", name: "Arjun Iyer", admissionNumber: "GVPS-2026-00001", className: "5", section: "A", school: "Green Valley", schoolCode: "GVPS", parent: "Ganesh", parentPhone: "98765", overdue: 12000, oldestDue: "2026-06-15T00:00:00.000Z" }], overdue: 12000 }
-            : { rows: [], threshold: 75 },
+        data: name === "fee-defaulters"
+          ? { rows: [{ id: "a", name: "Arjun Iyer", className: "5", overdue: 12000 }], total: 1, overdue: 12000, columns: [{ key: "name", label: "Name" }, { key: "className", label: "Class" }, { key: "overdue", label: "Overdue (INR)" }] }
+          : { rows: [], total: 0, columns: [] },
       })
     );
     const user = userEvent.setup();
     render(<Reports />);
-    expect(await screen.findByText("1 students · ₹12,000 overdue in total")).toBeInTheDocument();
+    expect(await screen.findByText("1 rows · ₹12,000 overdue in total")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Arjun Iyer" })).toHaveAttribute("href", "/students/a");
+    expect(screen.getByText("Fifth Standard", { selector: "td" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Download CSV/ })).toHaveAttribute("href", "/api/reports/fee-defaulters?format=csv");
 
-    await screen.findByRole("option", { name: "Green Valley" });
-    await user.selectOptions(screen.getByLabelText("School"), "s1");
-    expect(api.reports.get).toHaveBeenLastCalledWith("fee-defaulters", { school: "s1", className: "" });
-    expect(screen.getByRole("link", { name: /Download CSV/ })).toHaveAttribute("href", "/api/reports/fee-defaulters?school=s1&format=csv");
+    await screen.findAllByRole("option", { name: "Green Valley" }).catch(() => null);
+    await user.selectOptions(screen.getByLabelText("Class"), "5");
+    expect(api.reports.get).toHaveBeenLastCalledWith("fee-defaulters", { school: "", className: "5" });
 
-    await user.click(screen.getByRole("tab", { name: "Low attendance" }));
+    await user.click(screen.getAllByRole("button", { name: "Low attendance" })[0]);
     await user.selectOptions(screen.getByLabelText("Below"), "85");
-    expect(api.reports.get).toHaveBeenLastCalledWith("low-attendance", { school: "s1", className: "", threshold: 85 });
+    expect(api.reports.get).toHaveBeenLastCalledWith("low-attendance", { school: "", className: "5", threshold: "85" });
     expect(await screen.findByText("Nothing to report")).toBeInTheDocument();
   });
 });

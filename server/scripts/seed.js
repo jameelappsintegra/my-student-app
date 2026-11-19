@@ -19,6 +19,11 @@ const Attendance = require("../src/models/Attendance");
 const ExamResult = require("../src/models/ExamResult");
 const FeeInvoice = require("../src/models/FeeInvoice");
 const records = require("../src/services/recordsService");
+const User = require("../src/models/User");
+const Session = require("../src/models/Session");
+const AccessShare = require("../src/models/AccessShare");
+const { hashPassword } = require("../src/services/authService");
+const { setUserPhoto } = require("../src/services/userPhotoService");
 const { BUCKET } = require("../src/services/photoService");
 const students = require("../src/services/studentService");
 const admissions = require("../src/services/admissionService");
@@ -54,6 +59,17 @@ const PALETTE = ["#4f46e5", "#0ea5e9", "#14b8a6", "#f59e0b", "#ef4444", "#8b5cf6
 const now = new Date();
 const startYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
 const YEAR = `${startYear}-${startYear + 1}`;
+
+// Demo accounts for trying each role. Passwords come from
+// SEED_USER_PASSWORD (all demo accounts share it); without it, no accounts
+// are created.
+const DEMO_USERS = [
+  { username: "principal.gvps", name: "Dr. Lakshmi Narayanan", role: "principal", school: "GVPS" },
+  { username: "teacher.gvps", name: "Meera Krishnan", role: "teacher", school: "GVPS", classes: [["7", "A"], ["7", "B"], ["5", null]], grants: ["students.import"] },
+  { username: "principal.smms", name: "Sr. Agnes Joseph", role: "principal", school: "SMMS" },
+  { username: "teacher.smms", name: "Ravi Fernandes", role: "teacher", school: "SMMS", classes: [["5", null], ["9", null]] },
+  { username: "parent.demo", name: "Imran Rahman", role: "parent", school: "GVPS" },
+];
 
 const SUBJECTS = {
   pre: ["English", "Tamil", "Numbers", "Rhymes & Activity"],
@@ -190,6 +206,10 @@ async function reset() {
     Attendance.deleteMany({}),
     ExamResult.deleteMany({}),
     FeeInvoice.deleteMany({}),
+    AccessShare.deleteMany({}),
+    // Demo accounts only; real admins are kept.
+    User.deleteMany({ username: { $in: DEMO_USERS.map((u) => u.username) } }),
+    db.collection("userPhotos.files").deleteMany({ "metadata.demo": true }),
     db.collection(`${BUCKET}.files`).deleteMany({}),
     db.collection(`${BUCKET}.chunks`).deleteMany({}),
   ]);
@@ -293,6 +313,31 @@ async function reset() {
     console.log(`${school.name} (${school.code}) seeded`);
   }
   console.log(`Seeded ${SCHOOLS.length} schools, ${studentCount} students and ${admissionCount} admissions for ${YEAR}.`);
+
+  const password = process.env.SEED_USER_PASSWORD;
+  if (!password) {
+    console.log("No SEED_USER_PASSWORD set, so no demo accounts were created.");
+  } else {
+    const schoolsByCode = new Map((await School.find().lean()).map((x) => [x.code, x]));
+    const passwordHash = await hashPassword(password);
+    for (const u of DEMO_USERS) {
+      const sc = schoolsByCode.get(u.school);
+      const doc = { username: u.username, name: u.name, role: u.role, passwordHash, grants: u.grants };
+      if (u.role === "principal") doc.schools = [sc._id];
+      if (u.role === "teacher") doc.assignments = u.classes.map(([className, section]) => ({ school: sc._id, className, ...(section ? { section } : {}) }));
+      if (u.role === "parent") {
+        const kids = await Student.find({ school: sc._id, deletedAt: null }).sort({ admissionNumber: 1 }).limit(2).select("_id").lean();
+        doc.children = kids.map((k) => k._id);
+      }
+      const created = await User.create(doc);
+      const initials = u.name.replace(/^(Dr|Sr|Mr|Ms|Mrs)\.\s*/, "").split(" ").map((w) => w[0]).join("").slice(0, 2);
+      const png = await sharp(avatarSvg(initials, u.role === "teacher" ? "#15803d" : u.role === "principal" ? "#0f766e" : "#c2410c")).png().toBuffer();
+      await setUserPhoto(created._id, png);
+    }
+    await mongoose.connection.db.collection("userPhotos.files").updateMany({}, { $set: { "metadata.demo": true } });
+    await Session.deleteMany({ user: { $in: (await User.find({ username: { $in: DEMO_USERS.map((u) => u.username) } }).select("_id").lean()).map((x) => x._id) } });
+    console.log(`Created demo accounts: ${DEMO_USERS.map((u) => u.username).join(", ")} (password from SEED_USER_PASSWORD).`);
+  }
   await disconnectDatabase();
 })().catch(async (err) => {
   console.error(err.message);

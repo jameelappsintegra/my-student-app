@@ -47,7 +47,7 @@ test("apply → review → approve → enrol → appears in students and dashboa
   await expect(row).toContainText("Enrolled");
   await expect(row.getByRole("button")).toHaveCount(0);
 
-  await page.getByRole("link", { name: "Students" }).click();
+  await page.getByRole("link", { name: "Students", exact: true }).click();
   await page.getByLabel("Filter students").fill(child.firstName);
   await page.getByRole("button", { name: "Search" }).click();
   const studentRow = page.locator("tbody tr").first();
@@ -55,7 +55,7 @@ test("apply → review → approve → enrol → appears in students and dashboa
   await expect(studentRow).toContainText("Second Standard – A");
   await expect(studentRow).toContainText("E2E Test School");
 
-  await page.getByRole("link", { name: "Dashboard" }).click();
+  await page.getByRole("link", { name: "Home", exact: true }).click();
   await expect(page.getByText("Active students").locator("..").locator("p").nth(1)).toHaveText(String(before + 1));
   await expect(page.locator("canvas")).toBeVisible();
 });
@@ -129,17 +129,21 @@ test.describe("outage", () => {
 });
 
 test("every page loads without errors and placeholder pages are honest", async ({ page }) => {
-  for (const [path, heading] of [
-    ["/", "Dashboard"],
+  for (const [path, heading, title] of [
+    ["/", "Dashboard", "Home"],
     ["/admissions", "Admissions"],
     ["/newadmission", "New Admission"],
     ["/students", "Students"],
     ["/students/new", "Add student"],
     ["/schools", "Schools"],
+    ["/users", "Users"],
+    ["/shares", "Shared records"],
+    ["/students/import", "Import students from a spreadsheet", "Import students"],
+    ["/account", "My account"],
   ]) {
     await page.goto(path);
     await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
-    await expect(page).toHaveTitle(`${heading} · EduPro`);
+    await expect(page).toHaveTitle(`${title || heading} · EduPro`);
   }
   // The old class page now redirects to Students.
   await page.goto("/myclass");

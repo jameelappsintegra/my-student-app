@@ -8,15 +8,20 @@ import useApi from "../../hooks/useApi";
 import useSchools from "../../hooks/useSchools";
 import { api } from "../../services/api";
 import { CLASSES, STUDENT_STATUS, classLabel, formatDate, fullName } from "../../constants";
+import { useAuth } from "../../context/auth";
 
 const Students = () => {
   const { schools } = useSchools();
+  const { can } = useAuth();
   const router = useRouter();
   const [page, setPage] = useState(1);
   const [school, setSchool] = useState("");
   useEffect(() => {
-    if (typeof router.query.school === "string") setSchool(router.query.school);
-  }, [router.query.school]);
+    const q = router.query;
+    if (typeof q.school === "string") setSchool(q.school);
+    if (typeof q.className === "string") setClassName(q.className);
+    if (typeof q.section === "string") setSection(q.section);
+  }, [router.query]);
   const [className, setClassName] = useState("");
   const [section, setSection] = useState("");
   const [search, setSearch] = useState("");
@@ -47,9 +52,14 @@ const Students = () => {
         title="Students"
         subtitle="Every enrolled student across your schools."
         actions={
-          <Link href="/students/new">
-            <a className="btn btn-primary hidden sm:inline-flex">Add student</a>
-          </Link>
+          <>
+            {can("students.import") && (
+              <Link href="/students/import"><a className="btn hidden sm:inline-flex">Import CSV</a></Link>
+            )}
+            {can("students.manage") && (
+              <Link href="/students/new"><a className="btn btn-primary hidden sm:inline-flex">Add student</a></Link>
+            )}
+          </>
         }
       />
       <Card>
@@ -173,11 +183,13 @@ const Students = () => {
         <Pagination pagination={pagination} onPage={setPage} />
       </Card>
 
-      <Link href="/students/new">
-        <a className="sm:hidden btn btn-primary btn-circle btn-lg fixed right-4 bottom-24 z-20 shadow-lg" aria-label="Add student">
-          <Icon name="plus" className="w-6 h-6" />
-        </a>
-      </Link>
+      {can("students.manage") && (
+        <Link href="/students/new">
+          <a className="sm:hidden btn btn-primary btn-circle btn-lg fixed right-4 bottom-24 z-20 shadow-lg" aria-label="Add student">
+            <Icon name="plus" className="w-6 h-6" />
+          </a>
+        </Link>
+      )}
     </Layout>
   );
 };

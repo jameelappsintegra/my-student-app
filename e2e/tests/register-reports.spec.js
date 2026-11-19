@@ -38,6 +38,7 @@ test("fee defaulters report lists an overdue student and downloads as CSV", asyn
   await page.request.post(`/api/students/${s.id}/fees`, { data: { academicYear: "2026-2027", title: "Term 1", amount: 8800, dueDate: "2026-06-15" } });
 
   await page.goto("/reports");
+  await page.getByRole("navigation", { name: "Reports" }).getByRole("button", { name: "Fee defaulters" }).click();
   await expect(page.getByRole("link", { name: `${child.firstName} ${child.lastName}` })).toBeVisible();
   const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("link", { name: /Download CSV/ }).click()]);
   expect(download.suggestedFilename()).toMatch(/^edupro-fee-defaulters-\d{4}-\d{2}-\d{2}\.csv$/);
@@ -46,6 +47,6 @@ test("fee defaulters report lists an overdue student and downloads as CSV", asyn
   expect(text).toContain(`${child.firstName} ${child.lastName},E2E Test School,5,C`);
   expect(text).toContain(",8800,8800,1,2026-06-15");
 
-  await page.getByRole("tab", { name: "Student list" }).click();
+  await page.getByRole("navigation", { name: "Reports" }).getByRole("button", { name: "Student list" }).click();
   await expect(page.getByRole("link", { name: /Download CSV/ })).toHaveAttribute("href", "/api/reports/students?format=csv");
 });

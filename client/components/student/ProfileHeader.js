@@ -10,8 +10,9 @@ const STATUSES = ["active", "inactive", "transferred", "withdrawn", "graduated"]
 
 export default function ProfileHeader({ student, attendance, results, fees, onChange, onDeleted }) {
   const { can } = useAuth();
-  const canManage = can("students.manage");
-  const canPhoto = can("students.photo");
+  const shared = Boolean(student.sharedAccess);
+  const canManage = !shared && can("students.manage");
+  const canPhoto = !shared && can("students.photo");
   const fileRef = useRef(null);
   const [photoBusy, setPhotoBusy] = useState(false);
   const [photoError, setPhotoError] = useState(null);
@@ -109,8 +110,8 @@ export default function ProfileHeader({ student, attendance, results, fees, onCh
       <dl className="grid grid-cols-3 gap-2 mt-4 sm:mt-5 text-center">
         <div className="rounded-lg bg-slate-50 p-2 sm:p-3">
           <dt className="text-xs text-slate-500">Attendance</dt>
-          <dd className={`text-base sm:text-lg font-semibold leading-tight ${attendance?.summary.percentage < 75 ? "text-error" : "text-slate-900"}`}>
-            {attendance?.summary.percentage != null ? `${attendance.summary.percentage}%` : "—"}
+          <dd className={`text-base sm:text-lg font-semibold leading-tight ${attendance?.summary?.percentage < 75 ? "text-error" : "text-slate-900"}`}>
+            {attendance?.summary?.percentage != null ? `${attendance.summary.percentage}%` : "—"}
           </dd>
         </div>
         <div className="rounded-lg bg-slate-50 p-2 sm:p-3">
