@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const { cleanTransform } = require("../utils/serialize");
 
-const AUDIENCES = ["everyone", "parents", "staff"];
+const AUDIENCES = ["everyone", "parents", "students", "staff"];
 
 const announcementSchema = new mongoose.Schema(
   {

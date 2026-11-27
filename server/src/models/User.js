@@ -40,6 +40,8 @@ const userSchema = new mongoose.Schema(
     grants: { type: [String], default: undefined },
     // Parents: their children.
     children: { type: [{ type: mongoose.Schema.Types.ObjectId, ref: "Student" }], default: undefined },
+    // Students: their own student record (one login per student).
+    student: { type: mongoose.Schema.Types.ObjectId, ref: "Student" },
     phone: { type: String, trim: true, maxlength: 20 },
     // Profile photo in GridFS bucket "userPhotos".
     photo: { fileId: mongoose.Schema.Types.ObjectId, updatedAt: Date },
@@ -63,6 +65,7 @@ const userSchema = new mongoose.Schema(
         ret.photoUrl = p && p.fileId ? `/api/users/${ret.id}/photo?v=${new Date(p.updatedAt).getTime()}` : null;
         if (ret.assignments) ret.assignments = ret.assignments.map((x) => ({ ...x, school: String(x.school?._id || x.school) }));
         if (ret.children) ret.children = ret.children.map((c) => String(c?._id || c));
+        if (ret.student) ret.student = String(ret.student?._id || ret.student);
         return ret;
       },
     },
@@ -71,6 +74,7 @@ const userSchema = new mongoose.Schema(
 
 userSchema.index({ role: 1 });
 userSchema.index({ children: 1 });
+userSchema.index({ student: 1 }, { unique: true, partialFilterExpression: { student: { $exists: true } } });
 
 userSchema.statics.MAX_FAILED_LOGINS = MAX_FAILED_LOGINS;
 userSchema.statics.LOCK_MINUTES = LOCK_MINUTES;

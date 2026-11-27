@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const { cleanTransform } = require("../utils/serialize");
 
-const NOTIFICATION_TYPES = ["announcement", "attendance", "result", "fee", "homework", "leave", "share", "timetable", "general"];
+const NOTIFICATION_TYPES = ["announcement", "attendance", "result", "fee", "homework", "leave", "share", "timetable", "transport", "library", "certificate", "general"];
 
 // In-app notifications. Other channels (email, SMS, WhatsApp) can be added
 // in notificationService without changing callers.

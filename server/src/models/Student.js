@@ -41,6 +41,9 @@ const studentSchema = new mongoose.Schema(
     phone: { type: String, trim: true, maxlength: 20 },
     transport: { type: String, enum: TRANSPORT_MODES },
     busRoute: { type: String, trim: true, maxlength: 60 },
+    // School bus: the route and stop the student is assigned to.
+    transportRoute: { type: mongoose.Schema.Types.ObjectId, ref: "TransportRoute" },
+    transportStop: { type: String, trim: true, maxlength: 80 },
     // Photo bytes live in GridFS (bucket "studentPhotos"); this is the pointer.
     photo: {
       fileId: mongoose.Schema.Types.ObjectId,
@@ -79,6 +82,7 @@ studentSchema.index({ searchTokens: 1 });
 studentSchema.index({ deletedAt: 1, lastName: 1, firstName: 1 });
 studentSchema.index({ deletedAt: 1, className: 1, section: 1, rollNumber: 1 });
 studentSchema.index({ deletedAt: 1, status: 1 });
+studentSchema.index({ transportRoute: 1 }, { sparse: true });
 // One roll number per section per year in each school. Soft delete unsets it.
 studentSchema.index(
   { school: 1, academicYear: 1, className: 1, section: 1, rollNumber: 1 },

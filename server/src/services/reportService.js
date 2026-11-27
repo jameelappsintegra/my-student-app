@@ -9,7 +9,7 @@ const Admission = require("../models/Admission");
 const School = require("../models/School");
 const { academicYearStart } = require("./recordsService");
 const { scoped, schoolIds } = require("../middleware/authorize");
-const { gradeFor } = require("../models/ExamResult");
+const { getSettings, gradeFor: gradeOn } = require("./schoolSettings");
 
 const oid = (id) => new mongoose.Types.ObjectId(id);
 const round1 = (n) => Math.round(n * 10) / 10;
@@ -164,12 +164,16 @@ async function examResults(q, user) {
   if (q.academicYear) match.academicYear = q.academicYear;
   const results = await ExamResult.find(match).lean();
   const byId = new Map(list.map((s) => [String(s._id), s]));
+  // Each school's own grading scale and pass mark.
+  const settings = new Map();
+  for (const sid of new Set(results.map((r) => String(r.school)))) settings.set(sid, await getSettings(sid));
   return results.map((r) => {
     const s = byId.get(String(r.student));
+    const st = settings.get(String(r.school));
     const total = r.subjects.reduce((a, x) => a + x.marks, 0);
     const max = r.subjects.reduce((a, x) => a + x.maxMarks, 0);
-    const passed = r.subjects.every((x) => (x.marks / x.maxMarks) * 100 >= 33);
-    return { s, r, pct: max ? (total / max) * 100 : 0, passed };
+    const passed = r.subjects.every((x) => (x.marks / x.maxMarks) * 100 >= st.passPercentage);
+    return { s, r, pct: max ? (total / max) * 100 : 0, passed, st };
   });
 }
 
@@ -179,7 +183,7 @@ async function examPerformance(q, user) {
   const groups = new Map();
   for (const x of rows) {
     const k = `${classKey(x.s)}|${x.r.academicYear}|${x.r.exam}`;
-    const g = groups.get(k) || { school: x.s.school?.name, schoolCode: x.s.school?.code, className: x.s.className, section: x.s.section || "", academicYear: x.r.academicYear, exam: x.r.exam, students: 0, sum: 0, passed: 0, highest: -1, topper: "" };
+    const g = groups.get(k) || { st: x.st, school: x.s.school?.name, schoolCode: x.s.school?.code, className: x.s.className, section: x.s.section || "", academicYear: x.r.academicYear, exam: x.r.exam, students: 0, sum: 0, passed: 0, highest: -1, topper: "" };
     g.students += 1;
     g.sum += x.pct;
     if (x.passed) g.passed += 1;
@@ -190,7 +194,7 @@ async function examPerformance(q, user) {
     groups.set(k, g);
   }
   return [...groups.values()]
-    .map(({ sum, ...g }) => ({ ...g, averagePercentage: round1(sum / g.students), averageGrade: gradeFor(sum / g.students), passRate: round1((g.passed / g.students) * 100), highest: round1(g.highest) }))
+    .map(({ sum, st, ...g }) => ({ ...g, averagePercentage: round1(sum / g.students), averageGrade: gradeOn(st, sum / g.students), passRate: round1((g.passed / g.students) * 100), highest: round1(g.highest) }))
     .sort((a, b) => byClass(a, b) || a.exam.localeCompare(b.exam));
 }
 
@@ -203,11 +207,12 @@ async function subjectPerformance(q, user) {
       const k = `${classKey(x.s)}|${x.r.exam}|${sub.subject}`;
       const pct = (sub.marks / sub.maxMarks) * 100;
       const g = groups.get(k) || { school: x.s.school?.name, className: x.s.className, section: x.s.section || "", exam: x.r.exam, subject: sub.subject, students: 0, sum: 0, highest: 0, lowest: 100, passed: 0 };
+      const passMark = x.st.passPercentage;
       g.students += 1;
       g.sum += pct;
       g.highest = Math.max(g.highest, pct);
       g.lowest = Math.min(g.lowest, pct);
-      if (pct >= 33) g.passed += 1;
+      if (pct >= passMark) g.passed += 1;
       groups.set(k, g);
     }
   }
@@ -227,7 +232,7 @@ async function toppers(q, user) {
   const out = [];
   for (const list of groups.values()) {
     list.sort((a, b) => b.pct - a.pct);
-    list.slice(0, q.top).forEach((x, i) => out.push({ ...studentRow(x.s), exam: x.r.exam, rank: i + 1, percentage: round1(x.pct), grade: gradeFor(x.pct) }));
+    list.slice(0, q.top).forEach((x, i) => out.push({ ...studentRow(x.s), exam: x.r.exam, rank: i + 1, percentage: round1(x.pct), grade: gradeOn(x.st, x.pct) }));
   }
   return out.sort((a, b) => byClass(a, b) || a.exam.localeCompare(b.exam) || a.rank - b.rank);
 }

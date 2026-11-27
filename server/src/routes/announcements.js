@@ -4,7 +4,7 @@ const Announcement = require("../models/Announcement");
 const Student = require("../models/Student");
 const User = require("../models/User");
 const { validate, validateId } = require("../middleware/validate");
-const { requirePermission: perm, schoolIds } = require("../middleware/authorize");
+const { requirePermission: perm, schoolIds, familyIds, isFamily } = require("../middleware/authorize");
 const { objectId, classCode, optionalText } = require("../validators/common");
 const { notify, parentsOf } = require("../services/notificationService");
 const { oid } = require("../services/classScope");
@@ -20,11 +20,11 @@ async function visibleFilter(user) {
   let schools;
   let classes = null;
   let audiences;
-  if (user.role === "parent") {
-    const kids = await Student.find({ _id: { $in: (user.children || []).map(oid) } }).select("school className").lean();
+  if (isFamily(user)) {
+    const kids = await Student.find({ _id: { $in: familyIds(user).map(oid) } }).select("school className").lean();
     schools = kids.map((k) => k.school);
     classes = kids.map((k) => k.className);
-    audiences = ["everyone", "parents"];
+    audiences = user.role === "student" ? ["everyone", "students"] : ["everyone", "parents"];
   } else {
     schools = (schoolIds(user) || []).map(oid);
     if (user.role === "teacher") classes = (user.assignments || []).map((a) => a.className);

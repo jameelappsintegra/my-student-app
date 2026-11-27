@@ -6,6 +6,7 @@ const h = require("../utils/asyncHandler");
 const { requirePermission: perm } = require("../middleware/authorize");
 const manage = perm("schools.manage");
 
+router.use("/:id", require("./settings"));
 router.get("/", perm("schools.view"), validate(v.listSchools, "query"), h(c.list));
 router.post("/", manage, validate(v.createSchool), h(c.create));
 router.get("/:id", validateId, manage, h(c.get));

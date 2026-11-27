@@ -17,12 +17,14 @@ const isoDay = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use a date like 2026-11-
 const day = (s) => new Date(`${s}T00:00:00.000Z`);
 const DAY = 86400000;
 
-// School days (Monday–Saturday) in a range.
-function schoolDays(from, to) {
+const { getSettings, isSchoolDay } = require("../services/schoolSettings");
+
+// School days in a range: skips the school's weekly offs and holidays.
+function schoolDays(from, to, settings) {
   const out = [];
   for (let t = from.getTime(); t <= to.getTime(); t += DAY) {
     const d = new Date(t);
-    if (d.getUTCDay() !== 0) out.push(d);
+    if (isSchoolDay(settings, d)) out.push(d);
   }
   return out;
 }
@@ -84,7 +86,7 @@ router.post("/:id/decision", validateId, perm("leave.decide"), validate(z.object
   let marked = 0;
   if (r.status === "approved") {
     // Mark the days as leave, but never overwrite a holiday.
-    const days = schoolDays(r.from, r.to);
+    const days = schoolDays(r.from, r.to, await getSettings(r.school));
     const holidays = new Set((await Attendance.find({ student: r.student, date: { $in: days }, status: "holiday" }).select("date").lean()).map((a) => a.date.getTime()));
     const ops = days.filter((d) => !holidays.has(d.getTime())).map((d) => ({
       updateOne: { filter: { student: r.student, date: d }, update: { $set: { status: "leave", note: `Approved leave: ${r.reason}`.slice(0, 200), school: r.school } }, upsert: true },

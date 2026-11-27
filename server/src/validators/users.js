@@ -20,11 +20,14 @@ const fields = {
   assignments: z.array(assignment).max(20).optional(),
   children: z.array(objectId).max(10).optional(),
   schools: z.array(objectId).max(20).optional(),
+  student: objectId.optional(),
   grants: z.array(z.enum(Object.keys(GRANTABLE))).max(10).optional(),
 };
 const roleRules = (d, ctx) => {
   if (d.role !== "teacher" && d.assignments?.length) ctx.addIssue({ code: "custom", path: ["assignments"], message: "Only teachers have classes" });
   if (d.role !== "parent" && d.children?.length) ctx.addIssue({ code: "custom", path: ["children"], message: "Only parents have children linked" });
+  if (d.role === "student" && !d.student) ctx.addIssue({ code: "custom", path: ["student"], message: "Choose the student this login is for" });
+  if (d.role !== "student" && d.student) ctx.addIssue({ code: "custom", path: ["student"], message: "Only student logins are linked to a student record" });
   if (d.role !== "principal" && d.schools?.length) ctx.addIssue({ code: "custom", path: ["schools"], message: "Only principals head schools" });
   for (const g of d.grants || []) {
     if (!GRANTABLE[g].includes(d.role)) ctx.addIssue({ code: "custom", path: ["grants"], message: `${g} can't be given to a ${d.role}` });

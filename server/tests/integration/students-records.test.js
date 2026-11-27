@@ -251,7 +251,7 @@ describe("fees", () => {
     expect(p1.status).toBe(201);
     expect(p1.body.message).toMatch(/Receipt RCPT-TS-2026-00001/);
     expect(p1.body.data).toMatchObject({ status: "partial", paid: 5000, balance: 7000 });
-    expect((await pay(8000)).body.message).toMatch(/more than the ₹7000/);
+    expect((await pay(8000)).body.message).toMatch(/more than the ₹7,000 still due/);
     expect((await pay(100, { paidAt: "2099-01-01" })).status).toBe(400);
     expect((await pay(10.5)).status).toBe(400);
     expect((await agent.put(`/api/students/${s.id}/fees/${id}`).send({ amount: 4000 })).status).toBe(400);

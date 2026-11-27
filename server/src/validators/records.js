@@ -47,7 +47,7 @@ const updateResult = z
   .strict()
   .refine((d) => Object.keys(d).length > 0, "Nothing to update");
 
-const rupees = z.coerce.number().int("Use whole rupees").min(1, "Amount must be at least ₹1").max(10000000);
+const rupees = z.coerce.number().int("Use a whole amount (no paise or cents)").min(1, "Amount must be at least 1").max(10000000);
 const createInvoice = z
   .object({
     academicYear,

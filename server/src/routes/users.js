@@ -16,6 +16,16 @@ router.post("/", validate(v.createUser), h(async (req, res) => {
   audit(req, "user.create", { userId: user.id, role: user.role });
   sendSuccess(res, { status: 201, message: `Account created for ${user.name}`, data: user });
 }));
+// Creates logins for every student in a class who doesn't have one yet.
+// Usernames are admission numbers; passwords are random and returned once.
+const { z } = require("zod");
+const { objectId, classCode } = require("../validators/common");
+router.post("/student-logins", validate(z.object({ school: objectId, className: classCode, section: z.preprocess((x) => (x === "" ? undefined : x), z.string().trim().toUpperCase().regex(/^[A-Z]{1,5}$/).optional()) }).strict()), h(async (req, res) => {
+  const result = await users.createStudentLogins(req.valid.body);
+  audit(req, "user.student-logins", { created: result.created.length, school: req.valid.body.school, className: req.valid.body.className });
+  sendSuccess(res, { status: 201, message: result.created.length ? `Created ${result.created.length} student logins. Copy the passwords now; they won't be shown again.` : "Every student in this class already has a login.", data: result });
+}));
+
 router.get("/:id", validateId, h(async (req, res) => {
   sendSuccess(res, { message: "User", data: await users.withDetails(await users.getUser(req.params.id)) });
 }));

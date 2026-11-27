@@ -8,6 +8,8 @@ const FeeInvoice = require("../models/FeeInvoice");
 const Counter = require("../models/Counter");
 const School = require("../models/School");
 const ApiError = require("../utils/ApiError");
+const settingsSvc = require("./schoolSettings");
+const { withScores } = ExamResult;
 
 const DAY = 86400000;
 const toDay = (s) => new Date(`${s}T00:00:00.000Z`);
@@ -39,8 +41,9 @@ function summarise(records) {
 
 async function getAttendance(studentId, { from, to }) {
   const student = await loadStudent(studentId);
-  const end = to || isoDay(new Date());
-  const start = from || academicYearStart();
+  const settings = await settingsSvc.getSettings(student.school);
+  const end = to || settingsSvc.todayIn(settings.timezone);
+  const start = from || settingsSvc.academicYearStart(settings, toDay(end));
   if ((toDay(end) - toDay(start)) / DAY > 400) throw ApiError.badRequest("Choose a range of at most 400 days");
   const records = await Attendance.find({ student: student._id, date: { $gte: toDay(start), $lte: toDay(end) } })
     .sort({ date: -1 })
@@ -92,7 +95,9 @@ async function clearAttendance(studentId, date) {
 async function listResults(studentId, { publishedOnly = false } = {}) {
   const student = await loadStudent(studentId);
   const results = await ExamResult.find({ student: student._id, ...(publishedOnly ? { status: "published" } : {}) }).sort({ academicYear: -1, examDate: -1, createdAt: -1 });
-  return results.map((r) => r.toJSON());
+  // Graded on the school's own scale.
+  const settings = await settingsSvc.getSettings(student.school);
+  return results.map((r) => withScores(r.toJSON(), settings));
 }
 
 async function findResult(studentId, resultId) {
@@ -110,7 +115,7 @@ const duplicateExam = (err, exam) => {
 async function createResult(studentId, input) {
   const student = await loadStudent(studentId);
   try {
-    return (await ExamResult.create({ ...input, student: student._id, school: student.school })).toJSON();
+    return withScores((await ExamResult.create({ ...input, student: student._id, school: student.school })).toJSON(), await settingsSvc.getSettings(student.school));
   } catch (err) {
     throw duplicateExam(err, input.exam);
   }
@@ -132,7 +137,7 @@ async function updateResult(studentId, resultId, changes, user) {
   } catch (err) {
     throw duplicateExam(err, changes.exam);
   }
-  return result.toJSON();
+  return withScores(result.toJSON(), await settingsSvc.getSettings(result.school));
 }
 
 async function deleteResult(studentId, resultId, user) {
@@ -160,7 +165,8 @@ function feeSummary(invoices) {
 async function listFees(studentId) {
   const student = await loadStudent(studentId);
   const invoices = (await FeeInvoice.find({ student: student._id }).sort({ dueDate: 1 })).map((i) => i.toJSON());
-  return { summary: feeSummary(invoices), invoices };
+  const settings = await settingsSvc.getSettings(student.school);
+  return { summary: { ...feeSummary(invoices), currency: settings.currency, locale: settings.locale }, invoices };
 }
 
 async function findInvoice(studentId, invoiceId) {
@@ -179,7 +185,7 @@ async function updateInvoice(studentId, invoiceId, changes) {
   const invoice = await findInvoice(studentId, invoiceId);
   const paid = invoice.payments.reduce((a, p) => a + p.amount, 0);
   if (changes.amount !== undefined && changes.amount < paid) {
-    throw ApiError.badRequest(`The amount can't be less than the ₹${paid} already paid.`);
+    throw ApiError.badRequest(`The amount can't be less than the ${settingsSvc.money(await settingsSvc.getSettings(invoice.school), paid)} already paid.`);
   }
   invoice.set(changes);
   await invoice.save();
@@ -196,7 +202,7 @@ async function recordPayment(studentId, invoiceId, { amount, method, paidAt, ref
   const invoice = await findInvoice(studentId, invoiceId);
   const balance = invoice.amount - invoice.payments.reduce((a, p) => a + p.amount, 0);
   if (balance <= 0) throw ApiError.conflict("This fee is already fully paid.");
-  if (amount > balance) throw ApiError.badRequest(`The payment is more than the ₹${balance} still due.`);
+  if (amount > balance) throw ApiError.badRequest(`The payment is more than the ${settingsSvc.money(await settingsSvc.getSettings(invoice.school), balance)} still due.`);
   const school = await School.findById(invoice.school).select("code").lean();
   const year = invoice.academicYear.slice(0, 4);
   const seq = await Counter.next(`receipt:${school.code}:${year}`);

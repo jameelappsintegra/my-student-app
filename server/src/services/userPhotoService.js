@@ -35,7 +35,7 @@ async function viewablePhoto(viewer, targetId) {
   const target = await User.findById(targetId).select("role photo").lean();
   if (!target?.photo?.fileId) throw ApiError.notFound("No photo");
   const self = String(viewer._id) === String(target._id);
-  if (!self && viewer.role !== "admin" && target.role === "parent") throw ApiError.notFound("No photo");
+  if (!self && viewer.role !== "admin" && ["parent", "student"].includes(target.role)) throw ApiError.notFound("No photo");
   return target.photo;
 }
 

@@ -124,4 +124,6 @@ module.exports = {
   schoolRef,
   paginationQuery,
   optionalText,
+  phone,
+  toRealDate,
 };

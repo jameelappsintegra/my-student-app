@@ -26,7 +26,12 @@ async function getRegister(q) {
     .select("student status note")
     .lean();
   const byStudent = new Map(marks.map((m) => [String(m.student), m]));
+  // Tell the teacher when the day is a weekly off or a listed holiday.
+  const { getSettings, isSchoolDay, holidayName } = require("./schoolSettings");
+  const settings = await getSettings(school._id);
+  const offDay = isSchoolDay(settings, toDay(q.date)) ? null : holidayName(settings, toDay(q.date)) || "Weekly off";
   return {
+    offDay,
     school: { id: String(school._id), name: school.name, code: school.code },
     className: q.className,
     section: q.section ? q.section.toUpperCase() : null,

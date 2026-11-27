@@ -14,11 +14,13 @@ async function notify(userIds, { type = "general", title, body, link }) {
   return ids.length;
 }
 
-// Parent accounts linked to any of these students.
+// Parent and student accounts linked to any of these students. Each comes
+// back with `children`: the students it is linked to.
 async function parentsOf(studentIds) {
   const ids = (studentIds || []).map(oid);
   if (!ids.length) return [];
-  return (await User.find({ role: "parent", active: true, children: { $in: ids } }).select("_id children").lean());
+  const users = await User.find({ active: true, $or: [{ role: "parent", children: { $in: ids } }, { role: "student", student: { $in: ids } }] }).select("_id role children student").lean();
+  return users.map((u) => (u.role === "student" ? { _id: u._id, role: u.role, children: [u.student] } : u));
 }
 
 // Teachers assigned to the class (any section, or this section) and the

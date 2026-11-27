@@ -51,10 +51,15 @@ const examResultSchema = new mongoose.Schema(
 examResultSchema.index({ student: 1, academicYear: 1, exam: 1 }, { unique: true });
 examResultSchema.index({ school: 1, academicYear: 1, exam: 1, status: 1 });
 
-function withScores(ret) {
+// `scale` is a school's grading settings ({ gradingScale, passPercentage });
+// without it the CBSE nine-point scale is used.
+function withScores(ret, scale) {
+  const bands = scale?.gradingScale?.length ? [...scale.gradingScale].sort((a, b) => b.min - a.min) : null;
+  const grade = (pct) => (bands ? (bands.find((b) => pct >= b.min) || bands[bands.length - 1]).grade : gradeFor(pct));
+  const pass = scale?.passPercentage ?? PASS_PERCENT;
   ret.subjects = ret.subjects.map((s) => {
     const pct = (s.marks / s.maxMarks) * 100;
-    return { ...s, percentage: round1(pct), grade: gradeFor(pct), passed: pct >= PASS_PERCENT };
+    return { subject: s.subject, maxMarks: s.maxMarks, marks: s.marks, percentage: round1(pct), grade: grade(pct), passed: pct >= pass };
   });
   const total = ret.subjects.reduce((a, s) => a + s.marks, 0);
   const max = ret.subjects.reduce((a, s) => a + s.maxMarks, 0);
@@ -62,7 +67,7 @@ function withScores(ret) {
   ret.total = total;
   ret.maxTotal = max;
   ret.percentage = round1(pct);
-  ret.grade = gradeFor(pct);
+  ret.grade = grade(pct);
   ret.passed = ret.subjects.every((s) => s.passed);
   return ret;
 }

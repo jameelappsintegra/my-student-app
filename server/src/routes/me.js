@@ -23,7 +23,9 @@ router.delete("/photo", h(async (req, res) => {
   sendSuccess(res, { message: "Your photo was removed", data: user });
 }));
 
-const today = () => new Date(`${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`);
+const { getSettings, todayIn } = require("../services/schoolSettings");
+// Today in the school's time zone, as a UTC-midnight date.
+const today = async (school) => new Date(`${todayIn((await getSettings(school)).timezone)}T00:00:00.000Z`);
 
 router.get("/classes", h(async (req, res) => {
   const list = req.user.role === "teacher" ? req.user.assignments || [] : [];
@@ -33,7 +35,7 @@ router.get("/classes", h(async (req, res) => {
     list.map(async (a) => {
       const filter = { school: a.school, className: a.className, deletedAt: null, status: "active", ...(a.section ? { section: a.section } : {}) };
       const ids = (await Student.find(filter).select("_id").lean()).map((s) => s._id);
-      const marked = await Attendance.countDocuments({ student: { $in: ids }, date: today() });
+      const marked = await Attendance.countDocuments({ student: { $in: ids }, date: await today(a.school) });
       const s = byId.get(String(a.school));
       return { school: { id: String(a.school), name: s?.name, code: s?.code }, className: a.className, section: a.section || null, students: ids.length, markedToday: marked };
     })
@@ -57,7 +59,7 @@ router.get("/shared", h(async (req, res) => {
 }));
 
 router.get("/children", h(async (req, res) => {
-  const ids = req.user.role === "parent" ? req.user.children || [] : [];
+  const ids = require("../middleware/authorize").familyIds(req.user);
   const kids = await Student.find({ _id: { $in: ids }, deletedAt: null })
     .select("admissionNumber firstName middleName lastName className section rollNumber school photo status")
     .populate("school", "name code")
@@ -66,7 +68,7 @@ router.get("/children", h(async (req, res) => {
     kids.map(async (k) => {
       const [attendance, results, fees] = await Promise.all([
         records.getAttendance(k._id, {}),
-        records.listResults(k._id),
+        records.listResults(k._id, { publishedOnly: true }),
         records.listFees(k._id),
       ]);
       return {

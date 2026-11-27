@@ -16,6 +16,13 @@ function requirePermission(permission) {
   };
 }
 
+// Students a parent or student account belongs to.
+const familyIds = (user) =>
+  user?.role === "parent" ? (user.children || []).map((c) => String(c._id || c))
+    : user?.role === "student" && user.student ? [String(user.student._id || user.student)]
+      : [];
+const isFamily = (user) => user?.role === "parent" || user?.role === "student";
+
 // Mongo filter limiting students to what this user may see.
 function studentScope(user) {
   if (!user) return NOTHING;
@@ -35,8 +42,8 @@ function studentScope(user) {
     const list = (user.schools || []).map((s) => new mongoose.Types.ObjectId(String(s._id || s)));
     return list.length ? { school: { $in: list } } : NOTHING;
   }
-  if (user.role === "parent") {
-    const kids = (user.children || []).map((c) => new mongoose.Types.ObjectId(String(c._id || c)));
+  if (isFamily(user)) {
+    const kids = familyIds(user).map((c) => new mongoose.Types.ObjectId(c));
     return kids.length ? { _id: { $in: kids } } : NOTHING;
   }
   return NOTHING;
@@ -106,4 +113,4 @@ function schoolIds(user) {
   return [];
 }
 
-module.exports = { requirePermission, studentScope, scoped, requireStudentAccess, shareAllows, canTeach, schoolScope, schoolIds };
+module.exports = { familyIds, isFamily, requirePermission, studentScope, scoped, requireStudentAccess, shareAllows, canTeach, schoolScope, schoolIds };

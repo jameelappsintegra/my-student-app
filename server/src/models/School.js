@@ -21,6 +21,29 @@ const schoolSchema = new mongoose.Schema(
     email: { type: String, trim: true, lowercase: true, maxlength: 254 },
     principalName: { type: String, trim: true, maxlength: 120 },
     active: { type: Boolean, default: true },
+    // Per-school preferences (see services/schoolSettings.js for defaults).
+    settings: {
+      currency: { type: String, uppercase: true, match: /^[A-Z]{3}$/ },
+      locale: { type: String, maxlength: 20 },
+      timezone: { type: String, maxlength: 60 },
+      academicYearStartMonth: { type: Number, min: 1, max: 12 },
+      weeklyOffs: { type: [Number], default: undefined },
+      passPercentage: { type: Number, min: 0, max: 100 },
+      gradingScale: {
+        type: [new mongoose.Schema({ min: { type: Number, min: 0, max: 100, required: true }, grade: { type: String, required: true, maxlength: 20 }, remark: { type: String, maxlength: 40 } }, { _id: false })],
+        default: undefined,
+      },
+      terms: {
+        type: [new mongoose.Schema({ name: { type: String, required: true, maxlength: 40 }, start: { type: Date, required: true }, end: { type: Date, required: true } }, { _id: false })],
+        default: undefined,
+      },
+      holidays: {
+        type: [new mongoose.Schema({ date: { type: Date, required: true }, name: { type: String, required: true, maxlength: 80 } }, { _id: false })],
+        default: undefined,
+      },
+      library: { finePerDay: { type: Number, min: 0, max: 1000 }, loanDays: { type: Number, min: 1, max: 90 }, maxBooks: { type: Number, min: 1, max: 20 } },
+      homework: { allowLate: Boolean },
+    },
   },
   { timestamps: true, toJSON: { transform: cleanTransform } }
 );

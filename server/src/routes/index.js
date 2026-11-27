@@ -10,6 +10,7 @@ function apiRouter(options = {}) {
   // Public routes.
   router.use(require("./health"));
   router.use("/auth", require("./auth")(options));
+  router.use(require("./certificates").verifyRouter);
 
   router.get("/meta/classes", (_req, res) => {
     res.json({ success: true, message: "Classes", data: CLASSES });
@@ -43,6 +44,9 @@ router.use("/results", require("./results"));
 router.use("/audit", perm("audit.view"), require("./audit"));
 router.use("/promotion", perm("students.promote"), require("./promotion"));
 router.use("/identity", require("./identity"));
+router.use("/transport", require("./transport"));
+router.use("/library", require("./library"));
+router.use("/certificates", require("./certificates"));
 
   return router;
 }

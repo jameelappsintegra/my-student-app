@@ -35,7 +35,7 @@ router.delete("/attendance/:date", perm("attendance.mark"), dateParam, h(async (
 
 router.get("/results", shareAllows("academic"), h(async (req, res) => {
   // Parents, and other schools under a share, see published results only.
-  const publishedOnly = req.user.role === "parent" || Boolean(req.share);
+  const publishedOnly = ["parent", "student"].includes(req.user.role) || Boolean(req.share);
   sendSuccess(res, { message: "Results", data: await r.listResults(req.params.id, { publishedOnly }) });
 }));
 router.post("/results", perm("results.manage"), validate(v.createResult), h(async (req, res) => {
@@ -60,10 +60,15 @@ router.get("/report-card", shareAllows("academic"), h(async (req, res) => {
   const year = typeof req.query.academicYear === "string" && /^\d{4}-\d{4}$/.test(req.query.academicYear) ? req.query.academicYear : null;
   const student = await Student.findById(req.params.id).populate("school", "name code address city phone principalName board").lean();
   const academicYear = year || student.academicYear;
-  const publishedOnly = req.user.role === "parent" || Boolean(req.share);
+  const publishedOnly = ["parent", "student"].includes(req.user.role) || Boolean(req.share);
   const results = (await r.listResults(req.params.id, { publishedOnly })).filter((x) => x.academicYear === academicYear);
   const [y1] = academicYear.split("-").map(Number);
-  const attendance = await r.getAttendance(req.params.id, { from: `${y1}-04-01`, to: new Date(Math.min(Date.now(), Date.UTC(y1 + 1, 2, 31))).toISOString().slice(0, 10) });
+  const settings = await require("../services/schoolSettings").getSettings(student.school._id);
+  const m = settings.academicYearStartMonth;
+  const start = `${y1}-${String(m).padStart(2, "0")}-01`;
+  const yearEnd = new Date(Date.UTC(y1 + 1, m - 1, 0)).toISOString().slice(0, 10);
+  const today = require("../services/schoolSettings").todayIn(settings.timezone);
+  const attendance = await r.getAttendance(req.params.id, { from: start, to: today < yearEnd ? today : yearEnd });
   sendSuccess(res, {
     message: "Report card",
     data: {
@@ -72,6 +77,8 @@ router.get("/report-card", shareAllows("academic"), h(async (req, res) => {
       school: student.school,
       results,
       attendance: attendance.summary,
+      grading: { scale: settings.gradingScale, passPercentage: settings.passPercentage },
+      terms: settings.terms,
       generatedAt: new Date(),
       includesDrafts: results.some((x) => x.status !== "published"),
     },
@@ -100,12 +107,43 @@ router.post("/fees/:invoiceId/payments", perm("fees.manage"), idParam("invoiceId
   const data = await r.recordPayment(req.params.id, req.params.invoiceId, req.valid.body);
   const p = data.payments[data.payments.length - 1];
   audit(req, "fee.payment", { invoiceId: data.id, amount: p.amount, receipt: p.receiptNumber });
-  sendSuccess(res, { status: 201, message: `₹${p.amount} recorded. Receipt ${p.receiptNumber}`, data });
+  const money = require("../services/schoolSettings").money(await require("../services/schoolSettings").getSettings(data.school), p.amount);
+  sendSuccess(res, { status: 201, message: `${money} recorded. Receipt ${p.receiptNumber}`, data });
 }));
 router.delete("/fees/:invoiceId/payments/:paymentId", perm("fees.manage"), idParam("invoiceId"), idParam("paymentId"), h(async (req, res) => {
   const data = await r.removePayment(req.params.id, req.params.invoiceId, req.params.paymentId);
   audit(req, "fee.payment.remove", { invoiceId: data.id, paymentId: req.params.paymentId });
   sendSuccess(res, { message: "Payment removed", data });
+}));
+
+// Transport, library loans and certificates for one student.
+router.get("/services", h(async (req, res) => {
+  if (req.share) throw new ApiError(403, "Shared records don't include school services.");
+  const Student = require("../models/Student");
+  const TransportRoute = require("../models/TransportRoute");
+  const BookIssue = require("../models/BookIssue");
+  const Certificate = require("../models/Certificate");
+  const settingsSvc = require("../services/schoolSettings");
+  const s = await Student.findById(req.params.id).select("school transportRoute transportStop transport").lean();
+  const settings = await settingsSvc.getSettings(s.school);
+  const route = s.transportRoute ? await TransportRoute.findById(s.transportRoute).lean() : null;
+  const stop = route?.stops.find((x) => x.name === s.transportStop);
+  const loans = await BookIssue.find({ student: s._id }).sort({ returnedAt: 1, issuedAt: -1 }).limit(30).populate("book", "title author").lean();
+  const certs = await Certificate.find({ student: s._id }).sort({ issuedAt: -1 }).select("type serialNumber issuedAt status").lean();
+  const today = settingsSvc.todayIn(settings.timezone);
+  const { present } = require("./library");
+  sendSuccess(res, {
+    message: "Services",
+    data: {
+      currency: settings.currency,
+      locale: settings.locale,
+      transport: route
+        ? { route: { id: String(route._id), name: route.name, vehicleNumber: route.vehicleNumber, driverName: route.driverName, driverPhone: route.driverPhone, attendantName: route.attendantName, attendantPhone: route.attendantPhone }, stop: stop || { name: s.transportStop } }
+        : { mode: s.transport || null },
+      library: loans.map((x) => present(x, today)),
+      certificates: certs.map((c) => ({ id: String(c._id), type: c.type, serialNumber: c.serialNumber, issuedAt: c.issuedAt, status: c.status })),
+    },
+  });
 }));
 
 module.exports = router;
