@@ -102,17 +102,17 @@ function Riders({ route, onBack, onChanged }) {
           </div>
         </div>
         {loading ? <Loading /> : error ? <ErrorState error={error} onRetry={reload} /> : data.riders.length === 0 ? <EmptyState title="No riders yet" message="Add students who take this bus." /> : (
-          <div className="overflow-x-auto">
-            <table className="table table-compact w-full">
+          <div className="xl:overflow-x-auto">
+            <table className="table table-compact w-full table-stack">
               <thead><tr><th>Stop</th><th>Student</th><th>Class</th><th>Parent phone</th><th className="print:hidden" /></tr></thead>
               <tbody>
                 {data.riders.map((r) => (
                   <tr key={r.id}>
-                    <td>{r.stop}</td>
-                    <td>{r.name}<div className="text-xs text-slate-400">{r.admissionNumber}</div></td>
-                    <td>{classLabel(r.className)} {r.section || ""}</td>
-                    <td>{r.contact ? <a className="link" href={`tel:${r.contact}`}>{r.contact}</a> : "—"}</td>
-                    <td className="print:hidden"><button className="btn btn-ghost btn-xs text-error" onClick={async () => { try { const x = await api.transport.assign({ student: r.id, route: null }); setNotice(x.message); reload(); onChanged(); } catch (err) { setNotice(err.message); } }}>Remove</button></td>
+                    <td data-label="Stop">{r.stop}</td>
+                    <td data-primary>{r.name}<div className="text-xs font-normal text-slate-400">{r.admissionNumber}</div></td>
+                    <td data-label="Class">{classLabel(r.className)} {r.section || ""}</td>
+                    <td data-label="Parent phone">{r.contact ? <a className="link" href={`tel:${r.contact}`}>{r.contact}</a> : "—"}</td>
+                    <td data-actions className="print:hidden"><button className="btn btn-ghost btn-xs text-error" onClick={async () => { try { const x = await api.transport.assign({ student: r.id, route: null }); setNotice(x.message); reload(); onChanged(); } catch (err) { setNotice(err.message); } }}>Remove</button></td>
                   </tr>
                 ))}
               </tbody>

@@ -67,10 +67,10 @@ function BulkStudentLogins({ onClose, onSaved }) {
         <>
           <div className="alert alert-warning py-2 mb-3" role="status"><span>{result.message}</span></div>
           {result.created.length > 0 && (
-            <div className="overflow-x-auto max-h-72">
-              <table className="table table-compact w-full text-sm">
+            <div className="xl:overflow-x-auto max-h-72 overflow-y-auto">
+              <table className="table table-compact w-full text-sm table-stack">
                 <thead><tr><th>Student</th><th>Username</th><th>Password</th></tr></thead>
-                <tbody>{result.created.map((r) => <tr key={r.student}><td>{r.name}</td><td className="font-mono">{r.username}</td><td className="font-mono">{r.password}</td></tr>)}</tbody>
+                <tbody>{result.created.map((r) => <tr key={r.student}><td data-primary>{r.name}</td><td data-label="Username" className="font-mono">{r.username}</td><td data-label="Password" className="font-mono">{r.password}</td></tr>)}</tbody>
               </table>
             </div>
           )}
@@ -303,8 +303,8 @@ export default function Users() {
     <Layout title="Users">
       <PageHeader title="Users" subtitle="Accounts for staff, parents and students." actions={<>{role === "student" && <button className="btn" onClick={() => setDialog({ kind: "bulk" })}>Logins for a class</button>}<button className="btn btn-primary" onClick={() => setDialog({ kind: "edit" })}>New {role}</button></>} />
       <Notice message={notice} onDismiss={() => setNotice(null)} />
-      <div className="overflow-x-auto mb-4">
-        <div className="tabs tabs-boxed bg-white border border-slate-200 inline-flex flex-nowrap" role="tablist">
+      <div className="mb-4">
+        <div className="tabs tabs-boxed bg-white border border-slate-200 flex flex-wrap gap-1 sm:inline-flex" role="tablist">
           {ROLES.map(([k, label]) => (
             <button key={k} role="tab" aria-selected={role === k} className={`tab whitespace-nowrap ${role === k ? "tab-active" : ""}`} onClick={() => setRole(k)}>{label}</button>
           ))}

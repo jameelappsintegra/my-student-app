@@ -11,8 +11,38 @@ const PERIODS = [1, 2, 3, 4, 5, 6, 7, 8];
 
 function Grid({ entries, onCell, showClass }) {
   const at = (d, p) => entries.find((e) => e.day === d && e.period === p);
+  // Phones show one day at a time, starting with today (Sunday shows Monday).
+  const [day, setDay] = useState(() => Math.min(Math.max(new Date().getDay(), 1), 6));
+  const detail = (e) => [showClass ? `${classLabel(e.className)} ${e.section}` : e.teacher?.name, e.room && `Room ${e.room}`].filter(Boolean).join(" · ");
   return (
-    <div className="overflow-x-auto">
+    <>
+    <div className="md:hidden">
+      <div className="grid grid-cols-6 gap-1 mb-3" role="tablist" aria-label="Day">
+        {DAYS.map((d, i) => (
+          <button key={d} type="button" role="tab" aria-selected={day === i + 1} onClick={() => setDay(i + 1)}
+            className={`btn btn-sm px-0 ${day === i + 1 ? "btn-primary" : "btn-ghost bg-slate-100"}`}>{d}</button>
+        ))}
+      </div>
+      <ul className="space-y-2" aria-label={`${DAYS[day - 1]} periods`}>
+        {PERIODS.map((p) => {
+          const e = at(day, p);
+          return (
+            <li key={p}>
+              <button type="button" disabled={!onCell} onClick={() => onCell?.(day, p, e)} aria-label={`${DAYS[day - 1]} period ${p}: ${e ? e.subject : "free"}`}
+                className={`w-full flex items-center gap-3 rounded-lg border px-3 py-2 text-left ${e ? "border-primary/20 bg-primary/5" : "border-slate-100 bg-slate-50"}`}>
+                <span className="w-8 h-8 shrink-0 rounded-full bg-white border border-slate-200 flex items-center justify-center text-sm font-semibold text-slate-600">{p}</span>
+                <span className="min-w-0 flex-1">
+                  <span className={`block font-medium truncate ${e ? "text-slate-800" : "text-slate-400"}`}>{e ? e.subject : "Free"}</span>
+                  {e && detail(e) && <span className="block text-xs text-slate-500 truncate">{detail(e)}</span>}
+                </span>
+                {onCell && <span className="text-xs text-primary">{e ? "Edit" : "Add"}</span>}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+    <div className="hidden md:block overflow-x-auto">
       <table className="table table-compact w-full text-center">
         <thead><tr><th className="text-left">Period</th>{DAYS.map((d) => <th key={d}>{d}</th>)}</tr></thead>
         <tbody>
@@ -35,6 +65,7 @@ function Grid({ entries, onCell, showClass }) {
         </tbody>
       </table>
     </div>
+    </>
   );
 }
 
@@ -101,7 +132,7 @@ export default function Timetable() {
     <Layout title="Timetable">
       <PageHeader title="Timetable" subtitle={canEdit ? "Tap a period to set the subject, teacher and room." : "The weekly timetable."} />
       {user?.role === "teacher" && (
-        <div className="tabs tabs-boxed bg-white border border-slate-200 inline-flex mb-4" role="tablist">
+        <div className="tabs tabs-boxed bg-white border border-slate-200 inline-flex flex-wrap mb-4" role="tablist">
           <button role="tab" aria-selected={tab === "mine"} className={`tab ${tab === "mine" ? "tab-active" : ""}`} onClick={() => setTab("mine")}>My timetable</button>
           <button role="tab" aria-selected={tab === "class"} className={`tab ${tab === "class" ? "tab-active" : ""}`} onClick={() => setTab("class")}>A class</button>
         </div>

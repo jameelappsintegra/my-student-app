@@ -27,17 +27,17 @@ export default function Audit() {
           <input type="date" className="input input-bordered input-sm" aria-label="To" value={f.to} onChange={set("to")} />
         </div>
         {loading && !data ? <Loading /> : error ? <ErrorState error={error} onRetry={reload} /> : data.items.length === 0 ? <EmptyState title="No matching entries" /> : (
-          <div className="overflow-x-auto">
-            <table className="table table-compact w-full">
+          <div className="xl:overflow-x-auto">
+            <table className="table table-compact w-full table-stack">
               <thead><tr><th>When</th><th>Who</th><th>Action</th><th>Details</th><th>IP</th></tr></thead>
               <tbody>
                 {data.items.map((a) => (
                   <tr key={a.id}>
-                    <td className="whitespace-nowrap text-xs">{new Date(a.at).toLocaleString()}</td>
-                    <td>{a.actorName || "—"}<div className="text-xs text-slate-500 capitalize">{a.actorRole}</div></td>
-                    <td className="font-mono text-xs">{a.event}</td>
-                    <td className="text-xs text-slate-600 max-w-md truncate" title={JSON.stringify(a.details)}>{Object.entries(a.details || {}).filter(([k]) => !["actor"].includes(k)).map(([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : v}`).join(" · ")}</td>
-                    <td className="text-xs font-mono">{a.ip}</td>
+                    <td data-label="When" className="whitespace-nowrap text-xs">{new Date(a.at).toLocaleString()}</td>
+                    <td data-label="Who">{a.actorName || "—"}<div className="text-xs text-slate-500 capitalize">{a.actorRole}</div></td>
+                    <td data-primary className="font-mono text-xs">{a.event}</td>
+                    <td data-label="Details" className="text-xs text-slate-600 xl:max-w-md xl:truncate" title={JSON.stringify(a.details)}>{Object.entries(a.details || {}).filter(([k]) => !["actor"].includes(k)).map(([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : v}`).join(" · ")}</td>
+                    <td data-label="IP" className="text-xs font-mono">{a.ip}</td>
                   </tr>
                 ))}
               </tbody>

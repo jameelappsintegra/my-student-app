@@ -30,6 +30,7 @@ EduPro is a school management app. This repository holds three parts:
 - **Reports**: fee defaulters, low attendance (threshold of your choice) and class lists with parent contacts. Each can be filtered by school and class, viewed on screen, or downloaded as CSV for Excel (UTF-8, with protection against spreadsheet formula injection).
 - **Dashboard**: active students, admissions to review, the latest day's attendance, fees outstanding and overdue, students per school and per class. It can be filtered by school.
 - **Phone layout**: an app bar, bottom tabs chosen per role, full-screen search and card lists. The app can be installed to a phone's home screen.
+  - Lists never scroll sideways. Below 1280 px each row becomes a card with labelled values (two cards per row on tablets); reports are always cards, and the CSV download gives the spreadsheet view. The timetable shows one day at a time on phones, and tab bars wrap instead of scrolling.
 - **School life**: notifications (a bell with unread count), announcements by school, class or audience, homework, class timetables with clash checks, leave requests that mark attendance when approved, draft → published exam results, printable report cards, year-end promotion and an audit log.
 - **Student logins**: each student signs in to see their own record, published results, timetable, calendar and library catalogue. Admins create logins one at a time or for a whole class (usernames are admission numbers; random passwords are shown once and can be downloaded as CSV).
 - **Online homework**: teachers can ask for work to be handed in online, optionally out of a mark. Students type an answer and/or add a link; work after the due date is flagged late (or refused, per school). Teachers see who handed in, who hasn't, mark it or return it for changes; students and parents are notified.
@@ -127,7 +128,7 @@ More detail: [docs/API.md](docs/API.md) · [docs/DEPLOYMENT.md](docs/DEPLOYMENT.
 | `cd server && npm run test:integration` | API against an in-memory MongoDB replica set: auth, roles and scoping, admissions, students, records, register, reports, import, sharing, Aadhaar, school-life modules, student logins, homework submissions, settings and calendar, transport, library and certificates | 132 |
 | `cd server && npm test` | both of the above (`npm run test:coverage` for coverage) | 185 |
 | `cd client && npm test` | React pages and components for every role, including the new homework hand-in and marking, settings, library, certificates, verification, calendar and student home | 69 |
-| `cd e2e && npm install && npm test` | builds the web app, starts a throwaway database, an admin and the API, then runs Playwright on desktop and a phone | 25 |
+| `cd e2e && npm install && npm test` | builds the web app, starts a throwaway database, an admin and the API, then runs Playwright on desktop and a phone | 26 |
 
 The server and e2e tests download a MongoDB binary on first run. If your network blocks that, set `MONGOMS_SYSTEM_BINARY=/path/to/mongod` (and `MONGOMS_VERSION` to its version). The e2e suite uses Playwright's Chromium (`npx playwright install chromium`).
 

@@ -98,8 +98,8 @@ export default function StudentProfile() {
             }}
             onDeleted={() => router.replace("/students")}
           />
-          <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-            <div className="tabs tabs-boxed bg-white border border-slate-200 inline-flex flex-nowrap" role="tablist" aria-label="Student details">
+          <div>
+            <div className="tabs tabs-boxed bg-white border border-slate-200 flex flex-wrap gap-1 sm:inline-flex" role="tablist" aria-label="Student details">
               {tabs.map(([k, label]) => (
                 <button
                   key={k}

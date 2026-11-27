@@ -117,11 +117,11 @@ const Students = () => {
         ) : (
           <>
             {/* Phone: tappable cards */}
-            <ul className="sm:hidden divide-y divide-slate-100 -mx-2">
+            <ul className="lg:hidden divide-y divide-slate-100 -mx-2 md:mx-0 md:divide-y-0 md:grid md:grid-cols-2 md:gap-2">
               {data.map((s) => (
                 <li key={s.id}>
                   <Link href={`/students/${s.id}`}>
-                    <a className="flex items-center gap-3 px-2 py-3 active:bg-slate-50">
+                    <a className="flex items-center gap-3 px-2 py-3 active:bg-slate-50 md:border md:border-slate-100 md:rounded-lg md:px-3">
                       <Avatar student={s} size="w-11 h-11" />
                       <div className="min-w-0 flex-1">
                         <p className="font-medium text-slate-800 truncate">{fullName(s)}</p>
@@ -138,16 +138,16 @@ const Students = () => {
               ))}
             </ul>
             {/* Desktop: table */}
-            <div className="hidden sm:block overflow-x-auto">
+            <div className="hidden lg:block">
               <table className="table table-compact w-full">
                 <thead>
                   <tr>
                     <th>Student</th>
                     <th>Admission no.</th>
-                    <th>School</th>
+                    <th className="hidden xl:table-cell">School</th>
                     <th>Class</th>
                     <th>Roll</th>
-                    <th>Date of birth</th>
+                    <th className="hidden 2xl:table-cell">Date of birth</th>
                     <th>Status</th>
                   </tr>
                 </thead>
@@ -163,13 +163,14 @@ const Students = () => {
                         </Link>
                       </td>
                       <td className="font-mono text-xs">{s.admissionNumber}</td>
-                      <td>{s.school?.name}</td>
+                      <td className="hidden xl:table-cell max-w-[12rem] truncate" title={s.school?.name}>{s.school?.name}</td>
                       <td>
                         {classLabel(s.className)}
                         {s.section ? ` – ${s.section}` : ""}
+                        <div className="text-xs text-slate-500 xl:hidden">{s.school?.code}</div>
                       </td>
                       <td>{s.rollNumber || "—"}</td>
-                      <td>{formatDate(s.dateOfBirth)}</td>
+                      <td className="hidden 2xl:table-cell">{formatDate(s.dateOfBirth)}</td>
                       <td>
                         <span className={`badge badge-sm ${STUDENT_STATUS[s.status] || ""}`}>{s.status}</span>
                       </td>

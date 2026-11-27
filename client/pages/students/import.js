@@ -87,12 +87,12 @@ export default function ImportStudents() {
               {result.preview?.length > 0 && (
                 <>
                   <p className="font-medium text-sm mb-2">Preview of valid rows</p>
-                  <div className="overflow-x-auto">
-                    <table className="table table-compact w-full">
+                  <div className="xl:overflow-x-auto">
+                    <table className="table table-compact w-full table-stack">
                       <thead><tr><th>Row</th><th>Name</th><th>School</th><th>Class</th><th>Date of birth</th></tr></thead>
                       <tbody>
                         {result.preview.map((p) => (
-                          <tr key={p.row}><td>{p.row}</td><td>{p.name}</td><td>{p.school}</td><td>{classLabel(p.className)} {p.section}</td><td>{p.dateOfBirth}</td></tr>
+                          <tr key={p.row}><td data-label="Row">{p.row}</td><td data-primary>{p.name}</td><td data-label="School">{p.school}</td><td data-label="Class">{classLabel(p.className)} {p.section}</td><td data-label="Date of birth">{p.dateOfBirth}</td></tr>
                         ))}
                       </tbody>
                     </table>

@@ -246,8 +246,8 @@ const Admissions = () => {
             }
           />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="table table-compact w-full">
+          <div className="xl:overflow-x-auto">
+            <table className="table table-compact w-full table-stack">
               <thead>
                 <tr>
                   <th>Application</th>
@@ -263,22 +263,22 @@ const Admissions = () => {
                   const { primary, canEnroll, canReject } = actionsFor(a);
                   return (
                     <tr key={a.id}>
-                      <td className="font-mono text-xs">{a.applicationNumber}</td>
-                      <td>
+                      <td className="font-mono text-xs" data-label="Application">{a.applicationNumber}</td>
+                      <td data-primary>
                         {a.firstName} {a.lastName}
                         <div className="text-xs text-slate-500">
                           Born {formatDate(a.dateOfBirth)}
                         </div>
                       </td>
-                      <td>
+                      <td data-label="Class">
                         {classLabel(a.classApplied)}
                         <div className="text-xs text-slate-500">{a.school?.code} · {a.academicYear}</div>
                       </td>
-                      <td>{formatDate(a.createdAt)}</td>
-                      <td>
+                      <td data-label="Submitted">{formatDate(a.createdAt)}</td>
+                      <td data-label="Status">
                         <StatusBadge status={a.status} />
                       </td>
-                      <td>
+                      <td data-actions>
                         <div className="flex justify-end gap-1 flex-wrap">
                           {primary.map((s) => (
                             <button

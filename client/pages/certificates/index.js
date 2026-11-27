@@ -83,17 +83,17 @@ export default function Certificates() {
         </label>
       </div>
       {loading && !data ? <Loading /> : error ? <ErrorState error={error} onRetry={reload} /> : data.length === 0 ? <Card><EmptyState title="No certificates yet" /></Card> : (
-        <Card className="p-0 sm:p-0 overflow-x-auto">
-          <table className="table w-full">
+        <Card className="p-0 sm:p-0 xl:overflow-x-auto stack-wrap">
+          <table className="table w-full table-stack">
             <thead><tr><th>Serial</th><th>Student</th><th>Type</th><th>Issued</th><th /></tr></thead>
             <tbody>
               {data.map((c) => (
                 <tr key={c.id}>
-                  <td className="font-mono text-sm">{c.serialNumber}</td>
-                  <td>{c.snapshot?.name}<p className="text-xs text-slate-400">{c.snapshot?.admissionNumber}</p></td>
-                  <td>{c.label}{c.status === "cancelled" && <span className="badge badge-error badge-sm ml-2">Cancelled</span>}</td>
-                  <td>{formatDate(c.issuedAt)}<p className="text-xs text-slate-400">{c.issuedBy}</p></td>
-                  <td className="text-right"><Link href={`/certificates/${c.id}`}><a className="btn btn-sm">Open</a></Link></td>
+                  <td data-label="Serial" className="font-mono text-sm">{c.serialNumber}</td>
+                  <td data-primary>{c.snapshot?.name}<p className="text-xs font-normal text-slate-400">{c.snapshot?.admissionNumber}</p></td>
+                  <td data-label="Type">{c.label}{c.status === "cancelled" && <span className="badge badge-error badge-sm ml-2">Cancelled</span>}</td>
+                  <td data-label="Issued">{formatDate(c.issuedAt)}<p className="text-xs text-slate-400">{c.issuedBy}</p></td>
+                  <td data-actions className="text-right"><Link href={`/certificates/${c.id}`}><a className="btn btn-sm">Open</a></Link></td>
                 </tr>
               ))}
             </tbody>

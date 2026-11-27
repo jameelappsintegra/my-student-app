@@ -40,17 +40,17 @@ export default function PublishResults() {
       <Card>
         {!cls.school || !cls.className ? <EmptyState title="Choose a class" message="Pick a school and class to see its exams." /> :
           state.loading ? <Loading /> : state.error ? <ErrorState error={state.error} onRetry={load} /> : state.data?.exams.length === 0 ? <EmptyState title="No marks entered yet" message="Exams appear here once teachers enter marks." /> : state.data && (
-            <table className="table w-full">
+            <table className="table w-full table-stack">
               <thead><tr><th>Exam</th><th>Marks entered</th><th>Status</th><th className="text-right">Action</th></tr></thead>
               <tbody>
                 {state.data.exams.map((e) => {
                   const all = e.published === e.results;
                   return (
                     <tr key={e.exam}>
-                      <td className="font-medium">{e.exam}</td>
-                      <td>{e.results} of {state.data.students} students</td>
-                      <td><span className={`badge ${all ? "badge-success" : e.published ? "badge-warning" : "badge-ghost"}`}>{all ? "Published" : e.published ? `${e.published} published` : "Draft"}</span></td>
-                      <td className="text-right space-x-2">
+                      <td data-primary className="font-medium">{e.exam}</td>
+                      <td data-label="Marks entered">{e.results} of {state.data.students} students</td>
+                      <td data-label="Status"><span className={`badge ${all ? "badge-success" : e.published ? "badge-warning" : "badge-ghost"}`}>{all ? "Published" : e.published ? `${e.published} published` : "Draft"}</span></td>
+                      <td data-actions className="text-right space-x-2">
                         {!all && <button className={`btn btn-primary btn-sm ${busy === e.exam ? "loading" : ""}`} onClick={() => act(e.exam, true)}>Publish</button>}
                         {e.published > 0 && <button className="btn btn-ghost btn-sm" onClick={() => act(e.exam, false)}>Unpublish</button>}
                       </td>

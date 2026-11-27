@@ -108,8 +108,8 @@ export default function Reports() {
                 {data.overdue !== undefined ? ` · ${money(data.overdue)} overdue in total` : ""}
                 {data.collected !== undefined ? ` · ${money(data.collected)} collected` : ""}
               </p>
-              <div className="overflow-x-auto">
-                <table className="table table-compact w-full">
+              <div>
+                <table className="table table-compact w-full table-stack-always">
                   <thead>
                     <tr>{data.columns.map((c) => <th key={c.key}>{c.label}</th>)}</tr>
                   </thead>
@@ -117,7 +117,7 @@ export default function Reports() {
                     {data.rows.map((r, i) => (
                       <tr key={r.id || i} className="hover">
                         {data.columns.map((c) => (
-                          <td key={c.key} className={MONEY.has(c.key) || PCT.has(c.key) || typeof r[c.key] === "number" ? "tabular-nums" : ""}>
+                          <td key={c.key} {...(c.key === "name" ? { "data-primary": true } : { "data-label": c.label })} className={MONEY.has(c.key) || PCT.has(c.key) || typeof r[c.key] === "number" ? "tabular-nums" : ""}>
                             {c.key === "name" && r.id ? <Link href={`/students/${r.id}`}><a className="font-medium hover:text-primary">{r.name}</a></Link> : show(c.key, r[c.key])}
                           </td>
                         ))}

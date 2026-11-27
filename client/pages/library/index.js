@@ -64,27 +64,27 @@ function Loans({ school }) {
   const act = async (fn) => { try { const r = await fn(); setNotice(r.message); reload(); } catch (err) { setNotice(err.message); } };
   return (
     <>
-      <div className="tabs tabs-boxed bg-white border border-slate-200 inline-flex mb-3" role="tablist">
+      <div className="tabs tabs-boxed bg-white border border-slate-200 inline-flex flex-wrap mb-3" role="tablist">
         {[["open", "On loan"], ["overdue", "Overdue"], ["fines", "Unpaid fines"], ["returned", "Returned"]].map(([k, l]) => (
           <button key={k} role="tab" aria-selected={status === k} className={`tab ${status === k ? "tab-active" : ""}`} onClick={() => setStatus(k)}>{l}</button>
         ))}
       </div>
       <Notice message={notice} onDismiss={() => setNotice(null)} />
       {loading && !data ? <Loading /> : error ? <ErrorState error={error} onRetry={reload} /> : data.length === 0 ? <Card><EmptyState title="Nothing here" /></Card> : (
-        <Card className="p-0 sm:p-0 overflow-x-auto">
-          <table className="table w-full">
+        <Card className="p-0 sm:p-0 xl:overflow-x-auto stack-wrap">
+          <table className="table w-full table-stack">
             <thead><tr><th>Book</th><th>Student</th><th>Due</th><th>Status</th><th /></tr></thead>
             <tbody>
               {data.map((x) => (
                 <tr key={x.id}>
-                  <td className="max-w-[14rem]"><p className="font-medium truncate">{x.book?.title}</p><p className="text-xs text-slate-400 truncate">{x.book?.author}</p></td>
-                  <td>{x.student?.name}<p className="text-xs text-slate-400">{classLabel(x.student?.className)} {x.student?.section || ""}</p></td>
-                  <td>{formatDate(x.dueAt)}</td>
-                  <td>
+                  <td data-primary className="xl:max-w-[14rem]"><p className="font-medium xl:truncate">{x.book?.title}</p><p className="text-xs font-normal text-slate-400 xl:truncate">{x.book?.author}</p></td>
+                  <td data-label="Student">{x.student?.name}<p className="text-xs text-slate-400">{classLabel(x.student?.className)} {x.student?.section || ""}</p></td>
+                  <td data-label="Due">{formatDate(x.dueAt)}</td>
+                  <td data-label="Status">
                     {x.returnedAt ? <span className="badge badge-ghost badge-sm">Returned {formatDate(x.returnedAt)}</span> : x.overdue ? <span className="badge badge-error badge-sm">Overdue</span> : <span className="badge badge-info badge-sm">On loan</span>}
                     {x.fine > 0 && <p className="text-xs mt-1">Fine {x.fine} · {x.fineStatus}</p>}
                   </td>
-                  <td className="text-right whitespace-nowrap">
+                  <td data-actions className="text-right whitespace-nowrap">
                     {!x.returnedAt && <button className="btn btn-xs btn-primary" onClick={() => act(() => api.library.returnBook(x.id))}>Return</button>}
                     {x.fineStatus === "due" && <>
                       <button className="btn btn-xs ml-1" onClick={() => act(() => api.library.settleFine(x.id, "collect"))}>Fine paid</button>
@@ -122,7 +122,7 @@ export default function Library() {
       <div className="flex flex-wrap items-end gap-3 mb-4">
         {!family && <div className="w-64"><SchoolSelect value={school} onChange={setSchool} /></div>}
         {manage && (
-          <div className="tabs tabs-boxed bg-white border border-slate-200" role="tablist">
+          <div className="tabs tabs-boxed bg-white border border-slate-200 flex-wrap" role="tablist">
             <button role="tab" aria-selected={tab === "books"} className={`tab ${tab === "books" ? "tab-active" : ""}`} onClick={() => setTab("books")}>Catalogue</button>
             <button role="tab" aria-selected={tab === "loans"} className={`tab ${tab === "loans" ? "tab-active" : ""}`} onClick={() => setTab("loans")}>Loans</button>
           </div>

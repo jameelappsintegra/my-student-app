@@ -145,7 +145,7 @@ export default function Shares() {
     <Layout title="Shared records">
       <PageHeader title="Shared records" subtitle="Read-only access to students at other schools, with that school's approval." />
       <Notice message={notice} onDismiss={() => setNotice(null)} />
-      <div className="tabs tabs-boxed bg-white border border-slate-200 inline-flex mb-4" role="tablist">
+      <div className="tabs tabs-boxed bg-white border border-slate-200 inline-flex flex-wrap mb-4" role="tablist">
         {canRequest && <button role="tab" aria-selected={tab === "outgoing"} className={`tab ${tab === "outgoing" ? "tab-active" : ""}`} onClick={() => setTab("outgoing")}>My requests</button>}
         {canApprove && <button role="tab" aria-selected={tab === "incoming"} className={`tab ${tab === "incoming" ? "tab-active" : ""}`} onClick={() => setTab("incoming")}>To approve{tab === "incoming" && pending ? ` (${pending})` : ""}</button>}
       </div>
