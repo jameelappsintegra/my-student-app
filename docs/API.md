@@ -163,3 +163,74 @@ Students are created only by enrolling an admission. A roll number is unique per
 | `fee-defaulters` | Students with an overdue balance: `overdue`, `balance`, `overdueBills`, `oldestDue`, largest first. `data.overdue` is the total. |
 | `low-attendance` | Also takes `threshold` (default 75), `from` and `to`. Shows `days`, `absent` and `percentage`, lowest first. Holidays don't count as school days. |
 | `students` | Class list with gender, date of birth, address, transport and the first parent's name and phone. |
+
+
+## School life (notifications, announcements, homework, timetable, leave, results)
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| GET | `/notifications?unread=true` | `{ items, unread }` for the signed-in person. |
+| POST | `/notifications/read` | `{ ids }` or `{ all: true }`. |
+| GET / POST / DELETE | `/announcements` | Posting needs `announcements.manage`. `audience`: `everyone`, `parents`, `students` or `staff`; optional `school`, `className`, `eventDate`, `expiresAt`, `pinned`. |
+| GET | `/homework?upcoming=true` | Scoped to the person's classes or children. Families get `submissions` (their own); staff get `submissionCounts`. |
+| POST | `/homework` | `{ school, className, section?, subject, title, details?, dueDate, maxMarks?, onlineSubmission? }`. Only for an assigned class. |
+| PUT | `/homework/:id/submission` | Student only. `{ text?, link? }` (one is required; links must be http/https). Re-submitting is allowed until marked. Late = after the due date in the school's time zone; refused if the school doesn't accept late work. |
+| GET | `/homework/:id/submissions` | Teacher. Class roster with each submission, plus `summary { students, submitted, late, graded, missing }`. |
+| POST | `/homework/:id/submissions/:subId/review` | `{ action: grade|return, marks?, feedback? }`. Marks are required when the homework has `maxMarks`; returning needs feedback. |
+| GET / PUT / DELETE | `/timetable`, `/timetable/mine`, `/timetable/slot` | Clashes for a class, teacher or room in the same period → 409. |
+| GET / POST | `/leave`, `/leave/:id/decision`, `/leave/:id/cancel` | Approval marks the school days (skipping weekly offs and holidays) as leave. |
+| GET / POST | `/results/status`, `/results/publish` | Publishing locks marks; parents, students and other schools see published results only. |
+| GET | `/students/:id/report-card?academicYear=` | Results graded on the school's scale, attendance for the school's academic year, `grading` and `terms`. |
+| POST | `/promotion` | Year-end promotion of a class. |
+| GET | `/audit` | Admin only. |
+
+## Student logins
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| POST | `/users` | `role: "student"` needs `student` (a student id). One login per student (409 for a second). |
+| POST | `/users/student-logins` | Admin. `{ school, className, section? }`. Creates logins for every active student in the class who has none. Returns `{ created: [{ name, username, password, … }], skipped }`; passwords are shown only in this response. |
+
+## School settings and calendar
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| GET | `/schools/:id/settings` | Anyone who belongs to the school (staff, parents and students of its children). Returns the settings with defaults filled in. |
+| PUT | `/schools/:id/settings` | `settings.manage` (admin, or the school's principal). Any of `currency` (ISO code), `locale`, `timezone` (IANA name), `academicYearStartMonth`, `weeklyOffs` (0 = Sunday), `passPercentage`, `gradingScale [{ min, grade, remark? }]` (one band must start at 0), `terms [{ name, start, end }]`, `holidays [{ date, name }]`, `library { finePerDay, loanDays, maxBooks }`, `homework { allowLate }`. |
+| GET | `/schools/:id/calendar?from=&to=` | Holidays, terms, weekly offs, events (announcements with an `eventDate` for this audience) and homework due dates the person can see. At most 400 days. |
+
+The attendance register response also includes `offDay` (the holiday's name, or "Weekly off") when the date isn't a school day.
+
+## Transport
+
+All need staff access; changes need `transport.manage` (admin, principal, or a teacher it was granted to).
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| GET | `/transport/routes?school=` | With `riders` per route. |
+| POST / PUT | `/transport/routes`, `/transport/routes/:id` | `{ school, name, vehicleNumber?, driverName?, driverPhone?, attendantName?, attendantPhone?, capacity, stops: [{ name, pickupTime?, dropTime?, fee? }] }`. Names are unique per school. Capacity can't go below the riders; stops in use can't be removed. |
+| DELETE | `/transport/routes/:id` | 409 while students are assigned. |
+| GET | `/transport/routes/:id/riders` | By stop order, with one parent phone each. |
+| PUT | `/transport/assign` | `{ student, route, stop }`, or `{ student, route: null }` to take them off. Full route → 409. Parents and the student are notified. |
+
+## Library
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| GET | `/library/books?school=&search=&available=true` | Staff see their schools; parents and students see their children's schools. `available = copies - issued`. |
+| POST / PUT / DELETE | `/library/books`, `/library/books/:id` | `library.manage`. Copies can't go below copies on loan; a book on loan can't be removed. |
+| GET | `/library/issues?school=&status=open|overdue|returned|fines&student=` | `library.manage`. |
+| POST | `/library/issues` | `{ book, student, dueDate? }`. Due date defaults to the school's loan period. Refused when no copy is free (taken atomically), when the student is at the school's book limit, already has that book, or has an unpaid fine. |
+| POST | `/library/issues/:id/return` | `{ fine?: collect|waive|later }`. Fine = days late × the school's daily fine. Returning twice → 409. |
+| POST | `/library/issues/:id/fine` | `{ action: collect|waive }` for an unpaid fine. |
+
+## Certificates
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| GET | `/certificates?school=&type=&student=` | `certificates.issue` (admin, principal). |
+| POST | `/certificates` | `{ student, type: transfer|bonafide|character|study, purpose?, reason?, leavingDate?, conduct?, remarks?, ignoreDues? }`. Bonafide needs `purpose`; TC needs `reason`. A TC with fees due → 409 (with an `ignoreDues` field error) unless `ignoreDues: true`; it marks the student as transferred. One active TC per student. Details are stored as a snapshot. |
+| GET | `/certificates/:id` | Issuing staff of that school, or the student's own parent or student login. |
+| POST | `/certificates/:id/cancel` | `{ reason }`. Cancelling a TC puts the student back to their previous status. |
+| GET | `/certificates/verify/:code` | **Public.** Only type, serial, student name, school, issue date and status. |
+| GET | `/students/:id/services` | Bus assignment, library loans and certificates for one student (not available under a cross-school share). |

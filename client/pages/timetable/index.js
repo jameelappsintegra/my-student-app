@@ -87,7 +87,7 @@ export default function Timetable() {
   useEffect(load, [tab, cls.school, cls.className, cls.section]);
   // Parents start on their first child's class.
   useEffect(() => {
-    if (user?.role !== "parent") return;
+    if (user?.role !== "parent" && user?.role !== "student") return;
     api.me.children().then((r) => {
       const k = r.data[0];
       if (k) setCls({ school: k.school.id, className: k.className, section: k.section || "" });

@@ -38,10 +38,10 @@ export default function ParentHome() {
                 </div>
                 <div className="rounded-lg bg-slate-50 p-2">
                   <dt className="text-xs text-slate-500">Fees due</dt>
-                  <dd className={`font-semibold ${k.fees.overdue ? "text-error" : ""}`}>{k.fees.balance ? money(k.fees.balance) : "Paid"}</dd>
+                  <dd className={`font-semibold ${k.fees.overdue ? "text-error" : ""}`}>{k.fees.balance ? money(k.fees.balance, k.fees.currency, k.fees.locale) : "Paid"}</dd>
                 </div>
               </dl>
-              {k.fees.overdue > 0 && <p className="text-sm text-error mt-3">{money(k.fees.overdue)} is overdue. Please contact the school office.</p>}
+              {k.fees.overdue > 0 && <p className="text-sm text-error mt-3">{money(k.fees.overdue, k.fees.currency, k.fees.locale)} is overdue. Please contact the school office.</p>}
               <div className="flex flex-wrap gap-2 mt-4">
                 <Link href={`/students/${k.id}`}><a className="btn btn-primary btn-sm">View profile</a></Link>
                 <Link href={`/students/${k.id}?tab=attendance`}><a className="btn btn-sm">Attendance</a></Link>

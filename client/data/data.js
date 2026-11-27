@@ -4,8 +4,9 @@ const menuItems = [
   { name: "Home", short: "Home", link: "/", icon: "home", mobile: true },
   { name: "Students", short: "Students", link: "/students", icon: "students", mobile: true, perm: "students.search" },
   { name: "Attendance", short: "Attendance", link: "/attendance", icon: "calendar", mobile: true, perm: "attendance.mark" },
-  { name: "Homework", short: "Homework", link: "/homework", icon: "book", mobile: ["teacher", "parent"] },
-  { name: "Timetable", link: "/timetable", icon: "clock" },
+  { name: "Homework", short: "Homework", link: "/homework", icon: "book", mobile: ["teacher", "parent", "student"] },
+  { name: "Timetable", short: "Timetable", link: "/timetable", icon: "clock", mobile: "student" },
+  { name: "Calendar", short: "Calendar", link: "/calendar", icon: "calendar", mobile: "student" },
   { name: "Announcements", link: "/announcements", icon: "megaphone" },
   { name: "Leave requests", short: "Leave", link: "/leave", icon: "leave", perm: ["leave.request", "leave.decide"], mobile: "parent" },
   { name: "Admissions", short: "Admissions", link: "/admissions", icon: "admissions", mobile: true, perm: "admissions.manage" },
@@ -15,11 +16,15 @@ const menuItems = [
   { name: "Reports", short: "Reports", link: "/reports", icon: "report", perm: "reports.view", mobile: "principal" },
   { name: "Schools", link: "/schools", icon: "schools", perm: "schools.manage" },
   { name: "Import students", link: "/students/import", icon: "upload", perm: "students.import" },
+  { name: "Library", link: "/library", icon: "library" },
+  { name: "Transport", link: "/transport", icon: "bus", perm: "transport.manage" },
+  { name: "Certificates", link: "/certificates", icon: "certificate", perm: "certificates.issue" },
   { name: "Shared records", link: "/shares", icon: "share", perm: ["shares.request", "shares.approve"] },
   { name: "Users", link: "/users", icon: "users", perm: "users.manage" },
+  { name: "School settings", link: "/settings", icon: "settings", perm: "settings.manage" },
   { name: "Audit log", link: "/audit", icon: "shield", perm: "audit.view" },
   // Reached from the name in the sidebar; a bottom tab for parents.
-  { name: "My account", short: "Account", link: "/account", icon: "account", mobile: "parent", sidebar: false },
+  { name: "My account", short: "Account", link: "/account", icon: "account", mobile: ["parent", "student"], sidebar: false },
 ];
 
 const allowed = (can, perm) => !perm || (Array.isArray(perm) ? perm.some(can) : can(perm));

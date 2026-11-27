@@ -145,6 +145,7 @@ export default function AttendanceRegister() {
       </Card>
 
       <Notice message={notice} onDismiss={() => setNotice(null)} />
+      {reg?.offDay && <div className="alert alert-warning py-2 mb-3" role="status"><span>{reg.offDay === "Weekly off" ? "This day is a weekly off for the school." : `This day is a holiday: ${reg.offDay}.`} Mark attendance only if school was open.</span></div>}
       {!ready ? (
         <Card><EmptyState title="Choose a class" message="Pick the school, class and date to open the register." /></Card>
       ) : state.loading ? (

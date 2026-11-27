@@ -24,7 +24,7 @@ test("own student: all tabs", async () => {
   api.students.fees.mockResolvedValue({ data: { summary: { billed: 0, paid: 0, balance: 0, overdue: 0, status: "paid" }, invoices: [] } });
   render(<StudentProfile />);
   expect(await screen.findByRole("heading", { level: 1, name: "Shared Kid" })).toBeInTheDocument();
-  expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual(["Overview", "Academics", "Attendance", "Parents", "Fees"]);
+  expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual(["Overview", "Academics", "Attendance", "Parents", "Fees", "Bus & library"]);
 });
 
 test("shared student: banner, only approved tabs, no edit actions, no calls for hidden records", async () => {

@@ -3,7 +3,7 @@ import { Card, ConfirmDialog, Dialog, EmptyState } from "../common";
 import { api } from "../../services/api";
 import { FEE_STATUS, PAYMENT_METHODS, academicYearOptions, formatDate, money, todayIso } from "../../constants";
 
-function PaymentDialog({ studentId, invoice, onClose, onSaved }) {
+function PaymentDialog({ studentId, invoice, onClose, onSaved, cur }) {
   const [f, setF] = useState({ amount: String(invoice.balance), method: "upi", paidAt: todayIso(), reference: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -29,7 +29,7 @@ function PaymentDialog({ studentId, invoice, onClose, onSaved }) {
       onClose={onClose}
       footer={<><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className={`btn btn-primary ${busy ? "loading" : ""}`} onClick={save} disabled={busy}>Record payment</button></>}
     >
-      <p className="text-sm text-slate-500 mb-3">Still due: {money(invoice.balance)} of {money(invoice.amount)}. Record only money actually received.</p>
+      <p className="text-sm text-slate-500 mb-3">Still due: {money(invoice.balance, cur.currency, cur.locale)} of {money(invoice.amount, cur.currency, cur.locale)}. Record only money actually received.</p>
       <div className="grid grid-cols-2 gap-2">
         <label className="form-control"><span className="label-text mb-1">Amount (₹)</span><input className="input input-bordered" type="number" inputMode="numeric" min={1} max={invoice.balance} value={f.amount} onChange={(e) => setF({ ...f, amount: e.target.value })} /></label>
         <label className="form-control"><span className="label-text mb-1">Paid by</span><select className="select select-bordered" value={f.method} onChange={(e) => setF({ ...f, method: e.target.value })}>{Object.entries(PAYMENT_METHODS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></label>
@@ -78,6 +78,7 @@ export default function FeesTab({ studentId, fees, onChanged, canEdit = true }) 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const s = fees.summary;
+  const cur = { currency: s.currency || "INR", locale: s.locale || "en-IN" };
   const done = (msg) => { setDialog(null); onChanged(msg); };
   const confirm = async (fn, msg) => {
     setBusy(true);
@@ -89,10 +90,10 @@ export default function FeesTab({ studentId, fees, onChanged, canEdit = true }) 
     <div className="space-y-4">
       <Card>
         <dl className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div><dt className="text-xs text-slate-500">Billed</dt><dd className="text-lg font-semibold tabular-nums">{money(s.billed)}</dd></div>
-          <div><dt className="text-xs text-slate-500">Paid</dt><dd className="text-lg font-semibold tabular-nums text-success">{money(s.paid)}</dd></div>
-          <div><dt className="text-xs text-slate-500">Balance</dt><dd className="text-lg font-semibold tabular-nums">{money(s.balance)}</dd></div>
-          <div><dt className="text-xs text-slate-500">Overdue</dt><dd className={`text-lg font-semibold tabular-nums ${s.overdue ? "text-error" : ""}`}>{money(s.overdue)}</dd></div>
+          <div><dt className="text-xs text-slate-500">Billed</dt><dd className="text-lg font-semibold tabular-nums">{money(s.billed, cur.currency, cur.locale)}</dd></div>
+          <div><dt className="text-xs text-slate-500">Paid</dt><dd className="text-lg font-semibold tabular-nums text-success">{money(s.paid, cur.currency, cur.locale)}</dd></div>
+          <div><dt className="text-xs text-slate-500">Balance</dt><dd className="text-lg font-semibold tabular-nums">{money(s.balance, cur.currency, cur.locale)}</dd></div>
+          <div><dt className="text-xs text-slate-500">Overdue</dt><dd className={`text-lg font-semibold tabular-nums ${s.overdue ? "text-error" : ""}`}>{money(s.overdue, cur.currency, cur.locale)}</dd></div>
         </dl>
         <div className="flex justify-between items-center mt-3 gap-2">
           <span className={`badge ${s.status === "paid" ? "badge-success" : s.status === "overdue" ? "badge-error" : "badge-warning"}`}>
@@ -115,8 +116,8 @@ export default function FeesTab({ studentId, fees, onChanged, canEdit = true }) 
                   <p className="text-xs text-slate-500">{inv.academicYear} · due {formatDate(inv.dueDate)}</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold tabular-nums">{money(inv.amount)}</p>
-                  <span className={`badge badge-sm ${st.badge}`}>{st.label}{inv.balance && inv.status !== "unpaid" ? ` · ${money(inv.balance)} due` : ""}</span>
+                  <p className="font-semibold tabular-nums">{money(inv.amount, cur.currency, cur.locale)}</p>
+                  <span className={`badge badge-sm ${st.badge}`}>{st.label}{inv.balance && inv.status !== "unpaid" ? ` · ${money(inv.balance, cur.currency, cur.locale)} due` : ""}</span>
                 </div>
               </div>
               {inv.payments.length > 0 && (
@@ -124,7 +125,7 @@ export default function FeesTab({ studentId, fees, onChanged, canEdit = true }) 
                   {inv.payments.map((p) => (
                     <li key={p.id} className="py-2 flex flex-wrap justify-between gap-2">
                       <span>
-                        {money(p.amount)} by {PAYMENT_METHODS[p.method]} on {formatDate(p.paidAt)}
+                        {money(p.amount, cur.currency, cur.locale)} by {PAYMENT_METHODS[p.method]} on {formatDate(p.paidAt)}
                         <span className="block text-xs text-slate-500 font-mono">{p.receiptNumber}{p.reference ? ` · ${p.reference}` : ""}</span>
                       </span>
                       {canEdit && <button className="btn btn-ghost btn-xs text-error" onClick={() => { setError(null); setDialog({ kind: "removePayment", inv, p }); }}>Remove</button>}
@@ -141,7 +142,7 @@ export default function FeesTab({ studentId, fees, onChanged, canEdit = true }) 
         })
       )}
 
-      {dialog?.kind === "pay" && <PaymentDialog studentId={studentId} invoice={dialog.inv} onClose={() => setDialog(null)} onSaved={done} />}
+      {dialog?.kind === "pay" && <PaymentDialog cur={cur} studentId={studentId} invoice={dialog.inv} onClose={() => setDialog(null)} onSaved={done} />}
       {dialog?.kind === "fee" && <FeeDialog studentId={studentId} onClose={() => setDialog(null)} onSaved={done} />}
       {dialog?.kind === "deleteFee" && (
         <ConfirmDialog title={`Delete ${dialog.inv.title}?`} message="This fee has no payments, so nothing else is affected." busy={busy} error={error}
@@ -149,7 +150,7 @@ export default function FeesTab({ studentId, fees, onChanged, canEdit = true }) 
       )}
       {dialog?.kind === "removePayment" && (
         <ConfirmDialog title="Remove this payment?" confirmLabel="Remove payment"
-          message={`${money(dialog.p.amount)} (receipt ${dialog.p.receiptNumber}) will be removed and the balance goes back up. Use this only to correct a mistake.`}
+          message={`${money(dialog.p.amount, cur.currency, cur.locale)} (receipt ${dialog.p.receiptNumber}) will be removed and the balance goes back up. Use this only to correct a mistake.`}
           busy={busy} error={error} onClose={() => setDialog(null)}
           onConfirm={() => confirm(() => api.students.removePayment(studentId, dialog.inv.id, dialog.p.id), "Payment removed")} />
       )}

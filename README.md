@@ -29,14 +29,19 @@ EduPro is a school management app. This repository holds three parts:
   - Marks show up on each student's calendar.
 - **Reports**: fee defaulters, low attendance (threshold of your choice) and class lists with parent contacts. Each can be filtered by school and class, viewed on screen, or downloaded as CSV for Excel (UTF-8, with protection against spreadsheet formula injection).
 - **Dashboard**: active students, admissions to review, the latest day's attendance, fees outstanding and overdue, students per school and per class. It can be filtered by school.
-- **Phone layout**: an app bar, bottom tabs (Home, Students, Attendance, Admissions), full-screen search and card lists. The app can be installed to a phone's home screen.
+- **Phone layout**: an app bar, bottom tabs chosen per role, full-screen search and card lists. The app can be installed to a phone's home screen.
+- **School life**: notifications (a bell with unread count), announcements by school, class or audience, homework, class timetables with clash checks, leave requests that mark attendance when approved, draft → published exam results, printable report cards, year-end promotion and an audit log.
+- **Student logins**: each student signs in to see their own record, published results, timetable, calendar and library catalogue. Admins create logins one at a time or for a whole class (usernames are admission numbers; random passwords are shown once and can be downloaded as CSV).
+- **Online homework**: teachers can ask for work to be handed in online, optionally out of a mark. Students type an answer and/or add a link; work after the due date is flagged late (or refused, per school). Teachers see who handed in, who hasn't, mark it or return it for changes; students and parents are notified.
+- **Transport**: bus routes with vehicle, driver, attendant, seats and ordered stops (pickup and drop times, per-stop fee). Students are assigned to a stop; capacity is enforced; the riders list prints with a parent phone per child. Parents and students see the bus on the profile's **Bus & library** tab.
+- **Library**: catalogue per school (title, author, ISBN, category, shelf, copies), lending with a due date, returns, overdue list, and late fines worked out from the school's daily fine. Students can't borrow while a fine is unpaid or past the school's limit. Students and parents can browse the catalogue.
+- **Certificates**: transfer (TC), bonafide, character and study certificates with serial numbers like `GVPS/TC/2026/0001`, printed on the school's letterhead. A TC checks fee dues (it can be issued anyway after confirming) and marks the student as transferred; cancelling restores them. Each certificate carries a random code that anyone can check at `/verify/<code>` without signing in.
+- **School settings** (per school): currency and number format, time zone, the month the academic year starts, weekly off days, terms, holidays, grading scale and pass mark, library fine/loan period/book limit, and whether late homework is accepted. Results, report cards, reports, fee amounts, leave approval, the register's holiday warning and "today" all follow these settings. A **Calendar** page shows holidays, terms, events and homework due dates.
 
-> 🔐 **Sign-in is required.** Every page and every data endpoint needs an admin session.
+> 🔐 **Sign-in is required.** Every page and every data endpoint needs a session (except the certificate verification page).
 > - Passwords are bcrypt-hashed.
 > - The session cookie is httpOnly and SameSite=Strict, and expires after 8 hours.
 > - Five failed attempts lock the account for 15 minutes, and sign-ins are rate limited per IP.
->
-> There is only one role (admin) so far; staff, parent and teacher roles come next.
 
 ## Roles
 
@@ -45,10 +50,12 @@ EduPro is a school management app. This repository holds three parts:
 | Admin | All schools | Everything, including Users, Schools, admissions and fee collection | Indigo |
 | Principal (head of school or department) | Their own schools | Dashboard, all students, attendance, marks, fees (view), every report; approves sharing requests | Teal |
 | Teacher | Their assigned classes | Attendance register, marks, student photos, class reports; can request records from other schools | Green |
-| Parent | Their own children | Profile, attendance, results and fees (read-only); can update their child's photo | Orange |
+| Parent | Their own children | Profile, attendance, published results and fees (read-only); can update their child's photo; requests leave | Orange |
+| Student | Their own record | Profile, attendance, published results, timetable, calendar, library catalogue; hands in homework online | Violet |
 
 - Permissions live in `server/src/constants/permissions.js` and are checked on every API route. Records outside someone's scope return 404.
-- Admins can switch on **Can import students** for a teacher or principal. A teacher can then import only into their own classes.
+- Admins can switch on extra permissions per person: **Can import students** (teacher or principal; a teacher imports only into their own classes), **Runs the library** and **Manages school buses** (teachers).
+- Principals also manage transport, the library, certificates and their school's settings.
 - **Cross-school sharing**: a teacher or principal requests a student by admission number and says which kinds of record they need: academic, attendance, personal or fees. The student's principal (or an admin) approves, possibly narrowing the request, or rejects it. Shared access is read-only, expires automatically (30 days by default) and can be revoked.
 - **Profile photos**: everyone can set their own under My account. Staff photos are visible to signed-in users; a parent's photo is visible only to them and to admins.
 
@@ -77,7 +84,7 @@ EDUPRO_ADMIN_PASSWORD='at least 12 characters' npm run create-admin -- admin "Sc
 npm run seed              # optional: 3 sample schools with ~85 students, photos, marks, attendance, fees
                           # (npm run seed -- --reset replaces them; refused when NODE_ENV=production)
                           # SEED_USER_PASSWORD='…' also creates demo accounts for each role:
-                          # principal.gvps, teacher.gvps, principal.smms, teacher.smms, parent.demo
+                          # principal.gvps, teacher.gvps, principal.smms, teacher.smms, parent.demo, student.gvps
 npm run dev               # http://localhost:5000/api
 
 # 2. Web app (second terminal)
@@ -116,11 +123,11 @@ More detail: [docs/API.md](docs/API.md) · [docs/DEPLOYMENT.md](docs/DEPLOYMENT.
 
 | Command | What it covers | Count |
 | --- | --- | --- |
-| `cd server && npm run test:unit` | validators, query helpers, sanitizer, error mapping, env config, password hashing | 52 |
-| `cd server && npm run test:integration` | API against an in-memory MongoDB replica set: auth, admissions, schools, student CRUD, photo upload and validation, attendance and the class register, results and grading, fees and payments (including simultaneous payments), reports and CSV escaping, search, dashboard, concurrency, injection, index usage | 80 |
-| `cd server && npm test` | both of the above (`npm run test:coverage` for coverage) | 132 |
-| `cd client && npm test` | React components: sign-in, session guard, global search, student form, photo upload, attendance calendar and register, fees, reports, admissions, dashboard | 43 |
-| `cd e2e && npm install && npm test` | builds the web app, starts a throwaway database, an admin and the API, then runs Playwright on desktop and a phone | 18 |
+| `cd server && npm run test:unit` | validators, query helpers, sanitizer, error mapping, env config, password hashing | 53 |
+| `cd server && npm run test:integration` | API against an in-memory MongoDB replica set: auth, roles and scoping, admissions, students, records, register, reports, import, sharing, Aadhaar, school-life modules, student logins, homework submissions, settings and calendar, transport, library and certificates | 132 |
+| `cd server && npm test` | both of the above (`npm run test:coverage` for coverage) | 185 |
+| `cd client && npm test` | React pages and components for every role, including the new homework hand-in and marking, settings, library, certificates, verification, calendar and student home | 69 |
+| `cd e2e && npm install && npm test` | builds the web app, starts a throwaway database, an admin and the API, then runs Playwright on desktop and a phone | 25 |
 
 The server and e2e tests download a MongoDB binary on first run. If your network blocks that, set `MONGOMS_SYSTEM_BINARY=/path/to/mongod` (and `MONGOMS_VERSION` to its version). The e2e suite uses Playwright's Chromium (`npx playwright install chromium`).
 
@@ -129,12 +136,11 @@ CI (`.github/workflows/ci.yml`) runs all of these on every push.
 ## Known limitations
 
 - Password reset is done by an admin (Users → Reset password). There's no email reset yet.
-- Not built yet:
-  - student logins
-  - exam schedules and result approval or publishing
-  - timetables and online payment gateways
-  - notifications (SMS or WhatsApp to parents) and PDF report cards
-  - document uploads other than photos
+- Notifications are in-app only; email, SMS and WhatsApp aren't connected.
+- No online payment gateway; fee payments are recorded by staff.
+- Homework hand-in takes text and links, not file uploads.
+- A teacher who runs the library or buses finds students through search, which only covers their own classes. Principals and admins can find any student in their schools.
+- Not built yet: hostel, inventory, payroll and HR, exam timetables and seating plans, ID cards.
 - Classes are a fixed list (LKG–12). Sections are free text.
 - Parent and guardian details are stored on each admission and student record, not as separate parent records.
 - Editing a student cannot clear an optional field (an empty box keeps the old value).

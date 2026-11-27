@@ -110,8 +110,28 @@ export const FEE_STATUS = {
   overdue: { label: "Overdue", badge: "badge-error" },
 };
 
-const inr = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
-export const money = (n) => inr.format(n || 0);
+// Money in the school's currency (INR by default; see school settings).
+const formatters = new Map();
+export function money(n, currency = "INR", locale = "en-IN") {
+  const key = `${locale}|${currency}`;
+  if (!formatters.has(key)) {
+    try {
+      formatters.set(key, new Intl.NumberFormat(locale, { style: "currency", currency, maximumFractionDigits: 0 }));
+    } catch {
+      formatters.set(key, { format: (v) => `${currency} ${v}` });
+    }
+  }
+  return formatters.get(key).format(n || 0);
+}
+
+export const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+export const CERTIFICATE_TYPES = {
+  bonafide: "Bonafide certificate",
+  transfer: "Transfer certificate (TC)",
+  character: "Character certificate",
+  study: "Study certificate",
+};
 
 export const fullName = (s) => [s.firstName, s.middleName, s.lastName].filter(Boolean).join(" ");
 

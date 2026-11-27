@@ -45,18 +45,23 @@ test("each role gets its own menu, tabs and colour theme", async () => {
     return sidebarItems((p) => perms.includes(p)).map((i) => i.name);
   };
   expect(items("admin")).toEqual(expect.arrayContaining(["Users", "Schools", "Import students", "Reports", "Shared records"]));
-  expect(items("teacher")).toEqual(["Home", "Students", "Attendance", "Homework", "Timetable", "Announcements", "Leave requests", "Reports", "Shared records"]);
+  expect(items("teacher")).toEqual(["Home", "Students", "Attendance", "Homework", "Timetable", "Calendar", "Announcements", "Leave requests", "Reports", "Library", "Shared records"]);
+  expect(items("teacher", ["library.manage", "transport.manage"])).toEqual(expect.arrayContaining(["Library", "Transport"]));
+  expect(items("principal")).toEqual(expect.arrayContaining(["Transport", "Certificates", "School settings"]));
+  expect(items("student")).toEqual(["Home", "Homework", "Timetable", "Calendar", "Announcements", "Library"]);
+  const studentPerms = permissionsFor("student");
+  expect(tabItems((p) => studentPerms.includes(p), "student").map((i) => i.short)).toEqual(["Home", "Homework", "Timetable", "Calendar", "Account"]);
   expect(items("principal")).toEqual(expect.arrayContaining(["Publish results", "Promote students", "Leave requests"]));
   expect(items("principal")).not.toContain("Audit log");
   expect(items("admin")).toContain("Audit log");
   expect(items("teacher", ["students.import"])).toContain("Import students");
-  expect(items("parent")).toEqual(["Home", "Homework", "Timetable", "Announcements", "Leave requests"]);
+  expect(items("parent")).toEqual(["Home", "Homework", "Timetable", "Calendar", "Announcements", "Leave requests", "Library"]);
   const parentPerms = permissionsFor("parent");
   expect(tabItems((p) => parentPerms.includes(p), "parent").map((i) => i.short)).toEqual(["Home", "Homework", "Leave", "Account"]);
   const teacherPerms = permissionsFor("teacher");
   expect(tabItems((p) => teacherPerms.includes(p), "teacher").map((i) => i.short)).toEqual(["Home", "Students", "Attendance", "Homework"]);
 
-  for (const [role, theme] of [["teacher", "edupro-teacher"], ["parent", "edupro-parent"], ["principal", "edupro-principal"], ["admin", "edupro"]]) {
+  for (const [role, theme] of [["teacher", "edupro-teacher"], ["parent", "edupro-parent"], ["principal", "edupro-principal"], ["student", "edupro-student"], ["admin", "edupro"]]) {
     asRole(role);
     const { unmount } = render(<AuthProvider><p>page</p></AuthProvider>);
     await screen.findByText("page");

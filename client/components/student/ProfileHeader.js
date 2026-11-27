@@ -121,7 +121,7 @@ export default function ProfileHeader({ student, attendance, results, fees, onCh
         <div className="rounded-lg bg-slate-50 p-2 sm:p-3">
           <dt className="text-xs text-slate-500">Fees due</dt>
           <dd className={`text-base sm:text-lg font-semibold leading-tight ${fees?.summary?.overdue ? "text-error" : "text-slate-900"}`}>
-            {fees ? (fees.summary.balance ? money(fees.summary.balance) : "Paid") : "—"}
+            {fees ? (fees.summary.balance ? money(fees.summary.balance, fees.summary.currency, fees.summary.locale) : "Paid") : "—"}
           </dd>
         </div>
       </dl>

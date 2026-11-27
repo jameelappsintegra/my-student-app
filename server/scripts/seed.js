@@ -28,6 +28,11 @@ const Notification = require("../src/models/Notification");
 const User = require("../src/models/User");
 const Session = require("../src/models/Session");
 const AccessShare = require("../src/models/AccessShare");
+const HomeworkSubmission = require("../src/models/HomeworkSubmission");
+const TransportRoute = require("../src/models/TransportRoute");
+const Book = require("../src/models/Book");
+const BookIssue = require("../src/models/BookIssue");
+const Certificate = require("../src/models/Certificate");
 const { hashPassword } = require("../src/services/authService");
 const { setUserPhoto } = require("../src/services/userPhotoService");
 const { BUCKET } = require("../src/services/photoService");
@@ -71,10 +76,12 @@ const YEAR = `${startYear}-${startYear + 1}`;
 // are created.
 const DEMO_USERS = [
   { username: "principal.gvps", name: "Dr. Lakshmi Narayanan", role: "principal", school: "GVPS" },
-  { username: "teacher.gvps", name: "Meera Krishnan", role: "teacher", school: "GVPS", classes: [["7", "A"], ["7", "B"], ["5", null]], grants: ["students.import"] },
+  { username: "teacher.gvps", name: "Meera Krishnan", role: "teacher", school: "GVPS", classes: [["7", "A"], ["7", "B"], ["5", null]], grants: ["students.import", "library.manage"] },
   { username: "principal.smms", name: "Sr. Agnes Joseph", role: "principal", school: "SMMS" },
   { username: "teacher.smms", name: "Ravi Fernandes", role: "teacher", school: "SMMS", classes: [["5", null], ["9", null]] },
   { username: "parent.demo", name: "Imran Rahman", role: "parent", school: "GVPS" },
+  // Linked to the first student of GVPS class 7 A (also parent.demo's child).
+  { username: "student.gvps", name: "", role: "student", school: "GVPS" },
 ];
 
 const SUBJECTS = {
@@ -218,12 +225,94 @@ async function reset() {
     TimetableEntry.deleteMany({}),
     LeaveRequest.deleteMany({}),
     Notification.deleteMany({}),
+    HomeworkSubmission.deleteMany({}),
+    TransportRoute.deleteMany({}),
+    Book.deleteMany({}),
+    BookIssue.deleteMany({}),
+    Certificate.deleteMany({}),
     // Demo accounts only; real admins are kept.
     User.deleteMany({ username: { $in: DEMO_USERS.map((u) => u.username) } }),
     db.collection("userPhotos.files").deleteMany({ "metadata.demo": true }),
     db.collection(`${BUCKET}.files`).deleteMany({}),
     db.collection(`${BUCKET}.chunks`).deleteMany({}),
   ]);
+}
+
+// School settings, homework submissions, buses, library and certificates.
+async function seedCampus({ users, gvps, smms, day }) {
+  const ay = (m, d) => new Date(Date.UTC(m >= 4 ? startYear : startYear + 1, m - 1, d));
+  await School.updateOne({ _id: gvps._id }, { $set: { settings: {
+    terms: [{ name: "Term 1", start: ay(4, 1), end: ay(9, 30) }, { name: "Term 2", start: ay(10, 1), end: ay(3, 31) }],
+    holidays: [
+      { date: ay(8, 15), name: "Independence Day" }, { date: ay(10, 2), name: "Gandhi Jayanti" }, { date: ay(12, 25), name: "Christmas" },
+      { date: ay(1, 14), name: "Pongal" }, { date: ay(1, 26), name: "Republic Day" }, { date: day(12), name: "School foundation day" },
+    ],
+    library: { finePerDay: 2, loanDays: 14, maxBooks: 3 },
+  } } });
+  // St. Mary's: a different grading scale, pass mark and a five-day week.
+  await School.updateOne({ _id: smms._id }, { $set: { settings: {
+    weeklyOffs: [0, 6], passPercentage: 35,
+    gradingScale: [{ min: 90, grade: "A+", remark: "Outstanding" }, { min: 75, grade: "A", remark: "Very good" }, { min: 60, grade: "B", remark: "Good" }, { min: 45, grade: "C", remark: "Fair" }, { min: 35, grade: "D", remark: "Pass" }, { min: 0, grade: "F", remark: "Fail" }],
+    holidays: [{ date: ay(12, 25), name: "Christmas" }, { date: ay(1, 1), name: "New Year" }],
+    library: { finePerDay: 5, loanDays: 7, maxBooks: 2 },
+    homework: { allowLate: false },
+  } } });
+
+  // student.gvps handed in the overdue Science homework; the teacher marked it.
+  const student = users.get("student.gvps");
+  const sci = await Homework.findOne({ school: gvps._id, title: /renewable/ }).lean();
+  await HomeworkSubmission.create({ homework: sci._id, student: student.student, school: gvps._id, text: "Solar, wind, hydro, biomass and geothermal energy.", submittedBy: student._id, submittedAt: day(-2), status: "graded", marks: 5, feedback: "All correct. Well done!", gradedBy: users.get("teacher.gvps")._id, gradedAt: day(-1) });
+
+  // Buses.
+  const routes = await TransportRoute.create([
+    { school: gvps._id, name: "Route 1 – Beach Road", vehicleNumber: "TN-31-AB-1201", driverName: "Murugan S", driverPhone: "9443012345", attendantName: "Selvi R", attendantPhone: "9443067890", capacity: 30,
+      stops: [{ name: "Harbour Lane", pickupTime: "07:20", dropTime: "16:10", fee: 3500 }, { name: "Market Street", pickupTime: "07:35", dropTime: "15:55", fee: 3000 }, { name: "Temple Road", pickupTime: "07:45", dropTime: "15:45", fee: 2500 }] },
+    { school: gvps._id, name: "Route 2 – Station Road", vehicleNumber: "TN-31-AB-1202", driverName: "Joseph A", driverPhone: "9443023456", capacity: 25,
+      stops: [{ name: "Railway Station", pickupTime: "07:15", dropTime: "16:15", fee: 3500 }, { name: "Gandhi Nagar", pickupTime: "07:30", dropTime: "16:00", fee: 3000 }] },
+    { school: smms._id, name: "Chidambaram Town", vehicleNumber: "TN-31-CD-0420", driverName: "Ramesh K", driverPhone: "9443034567", capacity: 20,
+      stops: [{ name: "East Car Street", pickupTime: "07:40", dropTime: "15:40", fee: 2800 }, { name: "Bus Stand", pickupTime: "07:55", dropTime: "15:25", fee: 2400 }] },
+  ]);
+  for (const r of routes) {
+    const kids = await Student.find({ school: r.school, deletedAt: null, status: "active" }).sort({ admissionNumber: r.name.includes("2") ? -1 : 1 }).limit(r.school.equals(gvps._id) ? 5 : 4).lean();
+    for (const [i, k] of kids.entries()) {
+      if (k.transportRoute) continue;
+      const stop = r.stops[i % r.stops.length];
+      await Student.updateOne({ _id: k._id }, { $set: { transportRoute: r._id, transportStop: stop.name, transport: "school_bus", busRoute: r.name } });
+    }
+  }
+
+  // Library.
+  const titles = [
+    ["Wings of Fire", "A. P. J. Abdul Kalam", "Biography", "978-8173711466"], ["Malgudi Days", "R. K. Narayan", "Fiction", "978-0143039655"],
+    ["The Story of My Experiments with Truth", "M. K. Gandhi", "Biography"], ["Panchatantra Stories", "Vishnu Sharma", "Stories"],
+    ["Ponniyin Selvan (Part 1)", "Kalki Krishnamurthy", "Tamil literature"], ["A Brief History of Time", "Stephen Hawking", "Science"],
+    ["The Jungle Book", "Rudyard Kipling", "Fiction"], ["Thirukkural", "Thiruvalluvar", "Tamil literature"],
+    ["Charlotte's Web", "E. B. White", "Fiction"], ["NCERT Science Class 7", "NCERT", "Textbook"], ["Oxford Student Atlas", "Oxford", "Reference"],
+  ];
+  for (const sc of [gvps, smms]) {
+    const books = await Book.insertMany(titles.map(([title, author, category, isbn], i) => ({ school: sc._id, title, author, category, ...(isbn ? { isbn } : {}), shelf: `${String.fromCharCode(65 + (i % 4))}-${1 + (i % 3)}`, copies: 1 + (i % 3) })));
+    const kids = await Student.find({ school: sc._id, deletedAt: null, status: "active" }).sort({ rollNumber: 1, admissionNumber: 1 }).limit(4).lean();
+    const loans = [
+      { book: books[0], kid: kids[0], issued: -5, due: 9 },
+      { book: books[1], kid: kids[1], issued: -20, due: -6 }, // overdue
+      { book: books[6], kid: kids[2], issued: -30, due: -16, returned: -10, fine: 12, fineStatus: "due" },
+      { book: books[3], kid: kids[3], issued: -12, due: 2 },
+    ].filter((l) => l.kid);
+    for (const l of loans) {
+      await BookIssue.create({ school: sc._id, book: l.book._id, student: l.kid._id, issuedAt: day(l.issued), dueAt: day(l.due), ...(l.returned ? { returnedAt: day(l.returned), fine: l.fine, fineStatus: l.fineStatus } : {}) });
+      if (!l.returned) await Book.updateOne({ _id: l.book._id }, { $inc: { issued: 1 } });
+    }
+  }
+
+  // A bonafide certificate for the demo student.
+  const k = await Student.findById(student.student).lean();
+  const seq = await Counter.next(`cert:GVPS:BC:${now.getUTCFullYear()}`);
+  await Certificate.create({
+    school: gvps._id, student: k._id, type: "bonafide", serialNumber: `GVPS/BC/${now.getUTCFullYear()}/${String(seq).padStart(4, "0")}`,
+    verificationCode: require("crypto").randomBytes(8).toString("hex").slice(0, 12).toUpperCase(),
+    issuedAt: day(-3), issuedBy: users.get("principal.gvps")._id, purpose: "opening a student bank account",
+    snapshot: { name: [k.firstName, k.middleName, k.lastName].filter(Boolean).join(" "), admissionNumber: k.admissionNumber, dateOfBirth: k.dateOfBirth, gender: k.gender, nationality: k.nationality, father: k.father?.name, mother: k.mother?.name, className: k.className, section: k.section, rollNumber: k.rollNumber, academicYear: k.academicYear, admissionDate: k.admissionDate, address: k.address },
+  });
 }
 
 (async () => {
@@ -339,13 +428,19 @@ async function reset() {
       const doc = { username: u.username, name: u.name, role: u.role, passwordHash, grants: u.grants };
       if (u.role === "principal") doc.schools = [sc._id];
       if (u.role === "teacher") doc.assignments = u.classes.map(([className, section]) => ({ school: sc._id, className, ...(section ? { section } : {}) }));
+      const first7A = await Student.findOne({ school: sc._id, className: "7", section: "A", deletedAt: null }).sort({ rollNumber: 1 }).lean();
       if (u.role === "parent") {
-        const kids = await Student.find({ school: sc._id, deletedAt: null }).sort({ admissionNumber: 1 }).limit(2).select("_id").lean();
-        doc.children = kids.map((k) => k._id);
+        const kids = await Student.find({ school: sc._id, deletedAt: null, _id: { $ne: first7A?._id } }).sort({ admissionNumber: 1 }).limit(1).select("_id").lean();
+        doc.children = [first7A?._id, ...kids.map((k) => k._id)].filter(Boolean);
+      }
+      if (u.role === "student") {
+        doc.student = first7A._id;
+        doc.name = `${first7A.firstName} ${first7A.lastName}`;
+        u.name = doc.name;
       }
       const created = await User.create(doc);
       const initials = u.name.replace(/^(Dr|Sr|Mr|Ms|Mrs)\.\s*/, "").split(" ").map((w) => w[0]).join("").slice(0, 2);
-      const png = await sharp(avatarSvg(initials, u.role === "teacher" ? "#15803d" : u.role === "principal" ? "#0f766e" : "#c2410c")).png().toBuffer();
+      const png = await sharp(avatarSvg(initials, u.role === "teacher" ? "#15803d" : u.role === "principal" ? "#0f766e" : u.role === "student" ? "#7c3aed" : "#c2410c")).png().toBuffer();
       await setUserPhoto(created._id, png);
     }
     await mongoose.connection.db.collection("userPhotos.files").updateMany({}, { $set: { "metadata.demo": true } });
@@ -362,6 +457,8 @@ async function reset() {
     ]);
     await Homework.create([
       { school: gvps._id, className: "7", section: "A", subject: "Mathematics", title: "Exercise 5.3, questions 1–10", details: "Show all working in your notebook.", dueDate: day(2), author: users.get("teacher.gvps")._id },
+      { school: gvps._id, className: "7", section: "A", subject: "English", title: "Write a paragraph: My favourite festival", details: "About 150 words. Type it here or share a Google Doc link.", dueDate: day(4), onlineSubmission: true, maxMarks: 10, author: users.get("teacher.gvps")._id },
+      { school: gvps._id, className: "7", section: "A", subject: "Science", title: "List five sources of renewable energy", dueDate: day(-1), onlineSubmission: true, maxMarks: 5, author: users.get("teacher.gvps")._id },
       { school: gvps._id, className: "7", section: "B", subject: "Science", title: "Draw and label a plant cell", dueDate: day(3), author: users.get("teacher.gvps")._id },
       { school: gvps._id, className: "LKG", subject: "Rhymes & Activity", title: "Learn the rhyme 'Twinkle Twinkle'", dueDate: day(1), author: users.get("principal.gvps")._id },
     ]);
@@ -381,6 +478,7 @@ async function reset() {
     if (parent.children?.length) {
       await LeaveRequest.create({ student: parent.children[0], school: gvps._id, from: day(3), to: day(4), reason: "Family wedding out of town", requestedBy: parent._id });
     }
+    await seedCampus({ users, gvps, smms, day });
     console.log(`Created demo accounts: ${DEMO_USERS.map((u) => u.username).join(", ")} (password from SEED_USER_PASSWORD).`);
   }
   await disconnectDatabase();

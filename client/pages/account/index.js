@@ -4,7 +4,7 @@ import { Avatar, Card, Notice, PageHeader } from "../../components/common";
 import { useAuth } from "../../context/auth";
 import { api, ApiError } from "../../services/api";
 
-const ROLE_LABEL = { admin: "Administrator", principal: "Principal", teacher: "Teacher", parent: "Parent" };
+const ROLE_LABEL = { admin: "Administrator", principal: "Principal", teacher: "Teacher", parent: "Parent", student: "Student" };
 
 export default function Account() {
   const { user, setUser, signOut } = useAuth();
@@ -80,7 +80,7 @@ export default function Account() {
           </div>
           {photoError && <div className="alert alert-error mt-3 py-2" role="alert"><span>{photoError}</span></div>}
           <p className="text-xs text-slate-500 mt-3">
-            {user.role === "parent" ? "Your photo is visible only to you and the school office." : "Your photo is visible to people signed in to EduPro, so parents and colleagues can recognise you."}
+            {["parent", "student"].includes(user.role) ? "Your photo is visible only to you and the school office." : "Your photo is visible to people signed in to EduPro, so parents and colleagues can recognise you."}
           </p>
         </Card>
         <Card title="Change password">

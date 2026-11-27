@@ -8,6 +8,7 @@ import ParentsTab from "../../../components/student/ParentsTab";
 import AcademicsTab from "../../../components/student/AcademicsTab";
 import AttendanceTab from "../../../components/student/AttendanceTab";
 import FeesTab from "../../../components/student/FeesTab";
+import ServicesTab from "../../../components/student/ServicesTab";
 import useApi from "../../../hooks/useApi";
 import { api } from "../../../services/api";
 import { fullName } from "../../../constants";
@@ -19,6 +20,7 @@ const TABS = [
   ["attendance", "Attendance"],
   ["parents", "Parents"],
   ["fees", "Fees"],
+  ["services", "Bus & library"],
 ];
 
 // The student and its record summaries (fees only for roles that see them).
@@ -47,7 +49,7 @@ export default function StudentProfile() {
   // Under a cross-school share, only the approved kinds of record show.
   const shared = data?.student?.sharedAccess;
   const tabs = TABS.filter(([k]) => {
-    if (shared) return k === "overview" || shared.scopes.includes(TAB_SCOPE[k]);
+    if (shared) return k === "overview" || (TAB_SCOPE[k] && shared.scopes.includes(TAB_SCOPE[k]));
     return k !== "fees" || can("fees.view");
   });
   const tab = tabs.some(([k]) => k === tabParam) ? tabParam : "overview";
@@ -116,6 +118,7 @@ export default function StudentProfile() {
             {tab === "academics" && data.results && <AcademicsTab studentId={s.id} results={data.results} onChanged={changed} canEdit={!shared && can("results.manage")} />}
             {tab === "attendance" && data.attendance && <AttendanceTab studentId={s.id} yearSummary={data.attendance} onChanged={changed} canEdit={!shared && can("attendance.mark")} />}
             {tab === "parents" && <ParentsTab s={s} />}
+            {tab === "services" && <ServicesTab studentId={s.id} />}
             {tab === "fees" && data.fees && <FeesTab studentId={s.id} fees={data.fees} onChanged={changed} canEdit={!shared && can("fees.manage")} />}
           </div>
         </div>

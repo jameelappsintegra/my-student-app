@@ -11,6 +11,7 @@ const ROLES = [
   ["teacher", "Teachers"],
   ["principal", "Principals"],
   ["parent", "Parents"],
+  ["student", "Students"],
   ["admin", "Admins"],
 ];
 const ROLE_HELP = {
@@ -18,7 +19,67 @@ const ROLE_HELP = {
   principal: "Sees everything in their schools: dashboard, students, attendance, results, fees and reports. Approves record-sharing requests.",
   teacher: "Sees only their assigned classes. Marks attendance and enters marks.",
   parent: "Sees only their own children, read-only. Can update their child's photo.",
+  student: "Sees their own record, published results, timetable and calendar. Hands in homework online.",
 };
+
+// Creates logins for every student in a class who has none, and shows the
+// passwords once so the office can print or hand them out.
+function BulkStudentLogins({ onClose, onSaved }) {
+  const { schools } = useSchools();
+  const [f, setF] = useState({ school: "", className: "", section: "" });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const [result, setResult] = useState(null);
+  const csv = () => {
+    const rows = [["Name", "Section", "Roll", "Username", "Password"], ...result.created.map((r) => [r.name, r.section || "", r.rollNumber || "", r.username, r.password])];
+    return `data:text/csv;charset=utf-8,${encodeURIComponent(rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n"))}`;
+  };
+  return (
+    <Dialog
+      title="Create student logins for a class"
+      onClose={result ? () => onSaved(result.message) : onClose}
+      footer={result ? (
+        <>{result.created.length > 0 && <a className="btn btn-ghost" href={csv()} download="student-logins.csv">Download CSV</a>}<button className="btn btn-primary" onClick={() => onSaved(result.message)}>Done</button></>
+      ) : (
+        <><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className={`btn btn-primary ${busy ? "loading" : ""}`} disabled={busy || !f.school || !f.className} onClick={async () => {
+          setBusy(true); setError(null);
+          try { const r = await api.users.studentLogins({ ...f, section: f.section.trim() || undefined }); setResult({ ...r.data, message: r.message }); } catch (err) { setError(err); } finally { setBusy(false); }
+        }}>Create logins</button></>
+      )}
+    >
+      {!result ? (
+        <>
+          <p className="text-sm text-slate-500 mb-3">Each student without a login gets one. The username is their admission number; the password is random and shown only once.</p>
+          <div className="grid gap-2 sm:grid-cols-3">
+            <select className="select select-bordered select-sm" aria-label="School" value={f.school} onChange={(e) => setF({ ...f, school: e.target.value })}>
+              <option value="">School…</option>
+              {schools.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+            <select className="select select-bordered select-sm" aria-label="Class" value={f.className} onChange={(e) => setF({ ...f, className: e.target.value })}>
+              <option value="">Class…</option>
+              {CLASSES.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
+            </select>
+            <input className="input input-bordered input-sm" placeholder="Section (optional)" aria-label="Section" value={f.section} onChange={(e) => setF({ ...f, section: e.target.value })} />
+          </div>
+          {error && <div className="alert alert-error mt-3 py-2" role="alert"><span>{error.message}</span></div>}
+        </>
+      ) : (
+        <>
+          <div className="alert alert-warning py-2 mb-3" role="status"><span>{result.message}</span></div>
+          {result.created.length > 0 && (
+            <div className="overflow-x-auto max-h-72">
+              <table className="table table-compact w-full text-sm">
+                <thead><tr><th>Student</th><th>Username</th><th>Password</th></tr></thead>
+                <tbody>{result.created.map((r) => <tr key={r.student}><td>{r.name}</td><td className="font-mono">{r.username}</td><td className="font-mono">{r.password}</td></tr>)}</tbody>
+              </table>
+            </div>
+          )}
+          {result.skipped > 0 && <p className="text-xs text-slate-500 mt-2">{result.skipped} students already had a login.</p>}
+        </>
+      )}
+    </Dialog>
+  );
+}
 
 function ChildPicker({ value, onChange }) {
   const [q, setQ] = useState("");
@@ -72,7 +133,10 @@ function UserDialog({ user, role: initialRole, onClose, onSaved }) {
     assignments: (user?.assignments || []).map((a) => ({ school: a.school, className: a.className, section: a.section || "" })),
     schools: user?.schools || [],
     children: user?.childDetails || [],
+    student: user?.studentDetails ? [user.studentDetails] : [],
     canImport: (user?.grants || []).includes("students.import"),
+    canLibrary: (user?.grants || []).includes("library.manage"),
+    canTransport: (user?.grants || []).includes("transport.manage"),
   }));
   const [errors, setErrors] = useState({});
   const [busy, setBusy] = useState(false);
@@ -86,7 +150,10 @@ function UserDialog({ user, role: initialRole, onClose, onSaved }) {
     if (f.role === "teacher") body.assignments = f.assignments.filter((a) => a.school && a.className).map((a) => ({ ...a, section: a.section.trim() }));
     if (f.role === "principal") body.schools = f.schools;
     if (f.role === "parent") body.children = f.children.map((c) => c.id);
-    if (f.role === "teacher" || f.role === "principal") body.grants = f.canImport ? ["students.import"] : [];
+    if (f.role === "student" && isNew) body.student = f.student[0]?.id;
+    if (f.role === "teacher" || f.role === "principal") {
+      body.grants = [f.canImport && "students.import", f.role === "teacher" && f.canLibrary && "library.manage", f.role === "teacher" && f.canTransport && "transport.manage"].filter(Boolean);
+    }
     try {
       const res = isNew
         ? await api.users.create({ ...body, role: f.role, username: f.username.trim(), password: f.password })
@@ -160,6 +227,25 @@ function UserDialog({ user, role: initialRole, onClose, onSaved }) {
           {errors.children && <p className="text-error text-xs">{errors.children}</p>}
         </div>
       )}
+      {f.role === "student" && (
+        <div className="mt-4">
+          <p className="font-medium text-sm mb-2">Student record</p>
+          {isNew ? <ChildPicker value={f.student} onChange={(v) => set("student", v.slice(-1))} /> : <p className="text-sm">{f.student[0]?.name} <span className="text-xs text-slate-500">{f.student[0]?.admissionNumber}</span></p>}
+          {errors.student && <p className="text-error text-xs">{errors.student}</p>}
+        </div>
+      )}
+      {f.role === "teacher" && (
+        <>
+          <label className="label cursor-pointer justify-start gap-3 mt-3">
+            <input type="checkbox" className="toggle toggle-primary" checked={f.canLibrary} onChange={(e) => set("canLibrary", e.target.checked)} />
+            <span className="label-text">Runs the library (lend books, collect fines)</span>
+          </label>
+          <label className="label cursor-pointer justify-start gap-3">
+            <input type="checkbox" className="toggle toggle-primary" checked={f.canTransport} onChange={(e) => set("canTransport", e.target.checked)} />
+            <span className="label-text">Manages school buses (routes and riders)</span>
+          </label>
+        </>
+      )}
       {(f.role === "teacher" || f.role === "principal") && (
         <label className="label cursor-pointer justify-start gap-3 mt-3">
           <input type="checkbox" className="toggle toggle-primary" checked={f.canImport} onChange={(e) => set("canImport", e.target.checked)} />
@@ -215,7 +301,7 @@ export default function Users() {
   if (!can("users.manage")) return <Layout title="Users"><NoAccess /></Layout>;
   return (
     <Layout title="Users">
-      <PageHeader title="Users" subtitle="Accounts for staff and parents." actions={<button className="btn btn-primary" onClick={() => setDialog({ kind: "edit" })}>New {role}</button>} />
+      <PageHeader title="Users" subtitle="Accounts for staff, parents and students." actions={<>{role === "student" && <button className="btn" onClick={() => setDialog({ kind: "bulk" })}>Logins for a class</button>}<button className="btn btn-primary" onClick={() => setDialog({ kind: "edit" })}>New {role}</button></>} />
       <Notice message={notice} onDismiss={() => setNotice(null)} />
       <div className="overflow-x-auto mb-4">
         <div className="tabs tabs-boxed bg-white border border-slate-200 inline-flex flex-nowrap" role="tablist">
@@ -250,7 +336,12 @@ export default function Users() {
                   {u.assignments?.length > 0 && <p className="text-sm text-slate-600 mt-1">{u.assignments.map((a) => `${a.schoolCode} ${classLabel(a.className)}${a.section ? ` ${a.section}` : ""}`).join(", ")}</p>}
                   {u.schoolDetails?.length > 0 && <p className="text-sm text-slate-600 mt-1">{u.schoolDetails.map((s) => s.name).join(", ")}</p>}
                   {u.childDetails?.length > 0 && <p className="text-sm text-slate-600 mt-1">Children: {u.childDetails.map((c) => c.name).join(", ")}</p>}
-                  {u.grants?.includes("students.import") && <span className="badge badge-primary badge-outline badge-sm mt-1">Can import students</span>}
+                  {u.studentDetails && <p className="text-sm text-slate-600 mt-1">{u.studentDetails.admissionNumber} · {classLabel(u.studentDetails.className)} {u.studentDetails.section || ""} · {u.studentDetails.school}</p>}
+                  <div className="flex flex-wrap gap-1">
+                    {u.grants?.includes("students.import") && <span className="badge badge-primary badge-outline badge-sm mt-1">Can import students</span>}
+                    {u.grants?.includes("library.manage") && <span className="badge badge-primary badge-outline badge-sm mt-1">Librarian</span>}
+                    {u.grants?.includes("transport.manage") && <span className="badge badge-primary badge-outline badge-sm mt-1">Transport</span>}
+                  </div>
                   {u.lastLoginAt && <p className="text-xs text-slate-400 mt-1">Last sign-in {new Date(u.lastLoginAt).toLocaleString()}</p>}
                 </div>
               </div>
@@ -264,6 +355,7 @@ export default function Users() {
         </div>
       )}
       {dialog?.kind === "edit" && <UserDialog user={dialog.user} role={role} onClose={() => setDialog(null)} onSaved={done} />}
+      {dialog?.kind === "bulk" && <BulkStudentLogins onClose={() => setDialog(null)} onSaved={done} />}
       {dialog?.kind === "password" && <PasswordDialog user={dialog.user} onClose={() => setDialog(null)} onSaved={done} />}
       {dialog?.kind === "delete" && (
         <ConfirmDialog

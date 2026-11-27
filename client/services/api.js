@@ -80,6 +80,7 @@ export const api = {
     update: (id, body) => request("PUT", `/users/${id}`, { body }),
     resetPassword: (id, password) => request("POST", `/users/${id}/password`, { body: { password } }),
     remove: (id) => request("DELETE", `/users/${id}`),
+    studentLogins: (body) => request("POST", "/users/student-logins", { body }),
     uploadPhoto: (id, file) => {
       const form = new FormData();
       form.append("photo", file);
@@ -131,6 +132,39 @@ export const api = {
     list: (params) => request("GET", "/homework", { params }),
     create: (body) => request("POST", "/homework", { body }),
     remove: (id) => request("DELETE", `/homework/${id}`),
+    submit: (id, body) => request("PUT", `/homework/${id}/submission`, { body }),
+    submissions: (id) => request("GET", `/homework/${id}/submissions`),
+    review: (id, subId, body) => request("POST", `/homework/${id}/submissions/${subId}/review`, { body }),
+  },
+  settings: {
+    get: (school) => request("GET", `/schools/${school}/settings`),
+    save: (school, body) => request("PUT", `/schools/${school}/settings`, { body }),
+    calendar: (school, params) => request("GET", `/schools/${school}/calendar`, { params }),
+  },
+  transport: {
+    routes: (params) => request("GET", "/transport/routes", { params }),
+    create: (body) => request("POST", "/transport/routes", { body }),
+    update: (id, body) => request("PUT", `/transport/routes/${id}`, { body }),
+    remove: (id) => request("DELETE", `/transport/routes/${id}`),
+    riders: (id) => request("GET", `/transport/routes/${id}/riders`),
+    assign: (body) => request("PUT", "/transport/assign", { body }),
+  },
+  library: {
+    books: (params) => request("GET", "/library/books", { params }),
+    addBook: (body) => request("POST", "/library/books", { body }),
+    updateBook: (id, body) => request("PUT", `/library/books/${id}`, { body }),
+    removeBook: (id) => request("DELETE", `/library/books/${id}`),
+    issues: (params) => request("GET", "/library/issues", { params }),
+    issue: (body) => request("POST", "/library/issues", { body }),
+    returnBook: (id, fine) => request("POST", `/library/issues/${id}/return`, { body: fine ? { fine } : {} }),
+    settleFine: (id, action) => request("POST", `/library/issues/${id}/fine`, { body: { action } }),
+  },
+  certificates: {
+    list: (params) => request("GET", "/certificates", { params }),
+    issue: (body) => request("POST", "/certificates", { body }),
+    get: (id) => request("GET", `/certificates/${id}`),
+    cancel: (id, reason) => request("POST", `/certificates/${id}/cancel`, { body: { reason } }),
+    verify: (code) => request("GET", `/certificates/verify/${code}`),
   },
   timetable: {
     forClass: (params) => request("GET", "/timetable", { params }),
@@ -202,5 +236,6 @@ export const api = {
     deleteFee: (id, fid) => request("DELETE", `/students/${id}/fees/${fid}`),
     recordPayment: (id, fid, body) => request("POST", `/students/${id}/fees/${fid}/payments`, { body }),
     removePayment: (id, fid, pid) => request("DELETE", `/students/${id}/fees/${fid}/payments/${pid}`),
+    services: (id) => request("GET", `/students/${id}/services`),
   },
 };

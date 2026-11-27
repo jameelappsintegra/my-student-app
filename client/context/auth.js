@@ -6,7 +6,7 @@ import { Loading } from "../components/common";
 const AuthContext = createContext({ user: null, signOut: async () => {}, can: () => true, setUser: () => {} });
 export const useAuth = () => useContext(AuthContext);
 
-const PUBLIC_PAGES = ["/login"];
+const PUBLIC_PAGES = ["/login", "/verify/[code]"];
 
 // Only same-site relative paths, so ?next= cannot redirect off-site.
 export function safeNext(value) {
@@ -45,7 +45,7 @@ export function AuthProvider({ children }) {
     const role = state.user?.role;
     const name = !role || role === "admin" ? "edupro" : `edupro-${role}`;
     document.documentElement.setAttribute("data-theme", name);
-    const colors = { edupro: "#4f46e5", "edupro-principal": "#0f766e", "edupro-teacher": "#15803d", "edupro-parent": "#c2410c" };
+    const colors = { edupro: "#4f46e5", "edupro-principal": "#0f766e", "edupro-teacher": "#15803d", "edupro-parent": "#c2410c", "edupro-student": "#7c3aed" };
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", colors[name]);
   }, [state.user?.role]);
 
