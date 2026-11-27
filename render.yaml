@@ -1,0 +1,24 @@
+# Render Blueprint: New → Blueprint → pick this repository.
+services:
+  - type: web
+    name: edupro
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: MONGODB_URI
+        sync: false # paste your MongoDB Atlas connection string
+      - key: ADMIN_PASSWORD
+        sync: false # 12+ characters; creates or resets the "admin" login
+      - key: SEED_DEMO_DATA
+        value: "true" # sample schools/students on first start; set "false" for real use
+      - key: SEED_USER_PASSWORD
+        sync: false # password for the demo principal/teacher/parent accounts
+      - key: NODE_ENV
+        value: production
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: TRUST_PROXY
+        value: "2"
+      - key: CORS_ORIGIN
+        value: http://localhost:3000
