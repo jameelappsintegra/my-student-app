@@ -7,6 +7,7 @@ import { tabItems } from "../../data/data";
 import { useAuth } from "../../context/auth";
 import GlobalSearch from "../search/GlobalSearch";
 import Icon from "../common/Icon";
+import NotificationBell from "../common/NotificationBell";
 
 // Desktop: sidebar + top search bar. Phone: app bar, bottom tab bar and a
 // full-screen search, like a native app.
@@ -48,6 +49,7 @@ const Layout = ({ title, back, children }) => {
               </label>
             )}
             <span className="font-semibold text-slate-900 truncate flex-1 px-1">{title || "EduPro"}</span>
+            <NotificationBell />
             {canSearch && (
               <button className="btn btn-ghost btn-sm btn-circle" aria-label="Search students" onClick={() => setSearchOpen(true)}>
                 <Icon name="search" />
@@ -56,11 +58,10 @@ const Layout = ({ title, back, children }) => {
           </header>
 
           {/* Desktop search bar */}
-          {canSearch && (
-            <div className="hidden lg:block sticky top-0 z-30 bg-slate-50/95 backdrop-blur border-b border-slate-200 px-8 py-3">
-              <GlobalSearch className="max-w-xl" />
-            </div>
-          )}
+          <div className="hidden lg:flex items-center gap-3 sticky top-0 z-30 bg-slate-50/95 backdrop-blur border-b border-slate-200 px-8 py-3">
+            {canSearch ? <GlobalSearch className="max-w-xl flex-1" /> : <div className="flex-1" />}
+            <NotificationBell />
+          </div>
 
           <main className="flex-1 p-4 md:p-8 pb-24 lg:pb-8 max-w-6xl w-full">{children}</main>
 

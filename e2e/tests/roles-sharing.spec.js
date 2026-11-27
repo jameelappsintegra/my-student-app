@@ -14,6 +14,8 @@ async function setup(request) {
     address: "7 Private Road", className: "6", section: "A", academicYear: "2026-2027", father: { name: "Hidden Father", phone: "9123456789" },
   });
   await api(request, "POST", `/students/${awayKid.id}/results`, { academicYear: "2026-2027", exam: "Term 1", subjects: [{ subject: "English", maxMarks: 100, marks: 77 }] });
+  // Other schools see published results only.
+  await api(request, "POST", "/results/publish", { school: away.id, className: "6", section: "A", academicYear: "2026-2027", exam: "Term 1" });
   const t = `teacher.${tag.toLowerCase()}`;
   const p = `principal.${tag.toLowerCase()}`;
   await api(request, "POST", "/users", { username: t, password: PW, role: "teacher", name: `Home Teacher ${tag}`, assignments: [{ school: home.id, className: "5", section: "C" }], grants: ["students.import"] });

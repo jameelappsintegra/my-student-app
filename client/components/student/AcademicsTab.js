@@ -108,7 +108,7 @@ export default function AcademicsTab({ studentId, results, onChanged, canEdit = 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center gap-2">
-        <p className="text-sm text-slate-500">Marks by exam. Grades use the 9-point scale (A1 = 91%+); 33% is the pass mark.</p>
+        <p className="text-sm text-slate-500">Marks by exam. Grades use the 9-point scale (A1 = 91%+); 33% is the pass mark. <a className="link link-primary" href={`/students/${studentId}/report-card`}>Report card</a></p>
         {canEdit && <button className="btn btn-primary btn-sm shrink-0" onClick={() => setDialog({ kind: "edit" })}>Add marks</button>}
       </div>
       {results.length === 0 ? (
@@ -122,6 +122,7 @@ export default function AcademicsTab({ studentId, results, onChanged, canEdit = 
                 <p className="text-xs text-slate-500">{r.academicYear}{r.examDate ? ` · ${formatDate(r.examDate)}` : ""}</p>
               </div>
               <div className="flex items-center gap-2">
+                {r.status === "draft" && <span className="badge badge-ghost" title="Parents can't see draft results">Draft</span>}
                 <span className="text-lg font-semibold">{r.percentage}%</span>
                 <span className={`badge ${gradeTone(r.grade)}`}>{r.grade}</span>
                 <span className={`badge ${r.passed ? "badge-success badge-outline" : "badge-error"}`}>{r.passed ? "Pass" : "Needs re-test"}</span>

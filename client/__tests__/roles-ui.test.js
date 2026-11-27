@@ -45,11 +45,16 @@ test("each role gets its own menu, tabs and colour theme", async () => {
     return sidebarItems((p) => perms.includes(p)).map((i) => i.name);
   };
   expect(items("admin")).toEqual(expect.arrayContaining(["Users", "Schools", "Import students", "Reports", "Shared records"]));
-  expect(items("teacher")).toEqual(["Home", "Students", "Attendance", "Reports", "Shared records"]);
+  expect(items("teacher")).toEqual(["Home", "Students", "Attendance", "Homework", "Timetable", "Announcements", "Leave requests", "Reports", "Shared records"]);
+  expect(items("principal")).toEqual(expect.arrayContaining(["Publish results", "Promote students", "Leave requests"]));
+  expect(items("principal")).not.toContain("Audit log");
+  expect(items("admin")).toContain("Audit log");
   expect(items("teacher", ["students.import"])).toContain("Import students");
-  expect(items("parent")).toEqual(["Home"]);
+  expect(items("parent")).toEqual(["Home", "Homework", "Timetable", "Announcements", "Leave requests"]);
   const parentPerms = permissionsFor("parent");
-  expect(tabItems((p) => parentPerms.includes(p), "parent").map((i) => i.short)).toEqual(["Home", "Account"]);
+  expect(tabItems((p) => parentPerms.includes(p), "parent").map((i) => i.short)).toEqual(["Home", "Homework", "Leave", "Account"]);
+  const teacherPerms = permissionsFor("teacher");
+  expect(tabItems((p) => teacherPerms.includes(p), "teacher").map((i) => i.short)).toEqual(["Home", "Students", "Attendance", "Homework"]);
 
   for (const [role, theme] of [["teacher", "edupro-teacher"], ["parent", "edupro-parent"], ["principal", "edupro-principal"], ["admin", "edupro"]]) {
     asRole(role);

@@ -13,8 +13,6 @@ RUN cd client && API_INTERNAL_URL=http://127.0.0.1:5000 NEXT_TELEMETRY_DISABLED=
 
 FROM node:20-slim
 WORKDIR /app
-# A font so generated sample avatars can draw initials.
-RUN apt-get update && apt-get install -y --no-install-recommends fonts-dejavu-core && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1
 COPY --from=build /app/server server
 COPY --from=build /app/client client

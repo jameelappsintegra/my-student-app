@@ -19,6 +19,12 @@ const Attendance = require("../src/models/Attendance");
 const ExamResult = require("../src/models/ExamResult");
 const FeeInvoice = require("../src/models/FeeInvoice");
 const records = require("../src/services/recordsService");
+const ExamResultModel = require("../src/models/ExamResult");
+const Announcement = require("../src/models/Announcement");
+const Homework = require("../src/models/Homework");
+const TimetableEntry = require("../src/models/TimetableEntry");
+const LeaveRequest = require("../src/models/LeaveRequest");
+const Notification = require("../src/models/Notification");
 const User = require("../src/models/User");
 const Session = require("../src/models/Session");
 const AccessShare = require("../src/models/AccessShare");
@@ -207,6 +213,11 @@ async function reset() {
     ExamResult.deleteMany({}),
     FeeInvoice.deleteMany({}),
     AccessShare.deleteMany({}),
+    Announcement.deleteMany({}),
+    Homework.deleteMany({}),
+    TimetableEntry.deleteMany({}),
+    LeaveRequest.deleteMany({}),
+    Notification.deleteMany({}),
     // Demo accounts only; real admins are kept.
     User.deleteMany({ username: { $in: DEMO_USERS.map((u) => u.username) } }),
     db.collection("userPhotos.files").deleteMany({ "metadata.demo": true }),
@@ -312,6 +323,9 @@ async function reset() {
     }
     console.log(`${school.name} (${school.code}) seeded`);
   }
+  // Term 1 results are published; Mid-term stays as a draft so publishing
+  // can be tried.
+  await ExamResultModel.updateMany({ exam: "Term 1" }, { $set: { status: "published", publishedAt: new Date() } });
   console.log(`Seeded ${SCHOOLS.length} schools, ${studentCount} students and ${admissionCount} admissions for ${YEAR}.`);
 
   const password = process.env.SEED_USER_PASSWORD;
@@ -336,6 +350,37 @@ async function reset() {
     }
     await mongoose.connection.db.collection("userPhotos.files").updateMany({}, { $set: { "metadata.demo": true } });
     await Session.deleteMany({ user: { $in: (await User.find({ username: { $in: DEMO_USERS.map((u) => u.username) } }).select("_id").lean()).map((x) => x._id) } });
+    // Announcements, homework, timetable and a pending leave request.
+    const users = new Map((await User.find({ username: { $in: DEMO_USERS.map((u) => u.username) } }).lean()).map((u) => [u.username, u]));
+    const gvps = schoolsByCode.get("GVPS");
+    const smms = schoolsByCode.get("SMMS");
+    const day = (offset) => new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + offset));
+    await Announcement.create([
+      { title: "Annual sports day", body: "Sports day is on the main ground. Students wear house colours; parents are welcome from 9 am.", school: gvps._id, eventDate: day(10), pinned: true, author: users.get("principal.gvps")._id },
+      { title: "Parent–teacher meeting", body: "Meet your child's class teacher on Saturday between 10 am and 1 pm.", school: smms._id, audience: "parents", eventDate: day(4), author: users.get("principal.smms")._id },
+      { title: "Staff meeting", body: "All teachers in the staff room at 3:30 pm.", school: gvps._id, audience: "staff", author: users.get("principal.gvps")._id },
+    ]);
+    await Homework.create([
+      { school: gvps._id, className: "7", section: "A", subject: "Mathematics", title: "Exercise 5.3, questions 1–10", details: "Show all working in your notebook.", dueDate: day(2), author: users.get("teacher.gvps")._id },
+      { school: gvps._id, className: "7", section: "B", subject: "Science", title: "Draw and label a plant cell", dueDate: day(3), author: users.get("teacher.gvps")._id },
+      { school: gvps._id, className: "LKG", subject: "Rhymes & Activity", title: "Learn the rhyme 'Twinkle Twinkle'", dueDate: day(1), author: users.get("principal.gvps")._id },
+    ]);
+    const tt = [];
+    const plan = { 1: ["English", "Mathematics", "Science", "Tamil", "Social Science", "Computer"], 2: ["Mathematics", "English", "Tamil", "Science", "Games", "Social Science"] };
+    for (const [section, rows] of [["A", plan[1]], ["B", plan[2]]]) {
+      for (let d = 1; d <= 5; d++) {
+        rows.forEach((subject, i) => {
+          const period = ((i + d - 1) % 6) + 1;
+          const teach = section === "A" && subject === "Mathematics" ? users.get("teacher.gvps")._id : undefined;
+          tt.push({ school: gvps._id, className: "7", section, day: d, period, subject, ...(teach ? { teacher: teach } : {}), room: `7${section}` });
+        });
+      }
+    }
+    await TimetableEntry.insertMany(tt);
+    const parent = users.get("parent.demo");
+    if (parent.children?.length) {
+      await LeaveRequest.create({ student: parent.children[0], school: gvps._id, from: day(3), to: day(4), reason: "Family wedding out of town", requestedBy: parent._id });
+    }
     console.log(`Created demo accounts: ${DEMO_USERS.map((u) => u.username).join(", ")} (password from SEED_USER_PASSWORD).`);
   }
   await disconnectDatabase();

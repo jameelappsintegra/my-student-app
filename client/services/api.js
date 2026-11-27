@@ -118,6 +118,39 @@ export const api = {
       return request("POST", "/identity/aadhaar-offline", { form });
     },
   },
+  notifications: {
+    list: (unread) => request("GET", "/notifications", { params: { unread } }),
+    read: (body) => request("POST", "/notifications/read", { body }),
+  },
+  announcements: {
+    list: () => request("GET", "/announcements"),
+    create: (body) => request("POST", "/announcements", { body }),
+    remove: (id) => request("DELETE", `/announcements/${id}`),
+  },
+  homework: {
+    list: (params) => request("GET", "/homework", { params }),
+    create: (body) => request("POST", "/homework", { body }),
+    remove: (id) => request("DELETE", `/homework/${id}`),
+  },
+  timetable: {
+    forClass: (params) => request("GET", "/timetable", { params }),
+    mine: () => request("GET", "/timetable/mine"),
+    set: (body) => request("PUT", "/timetable/slot", { body }),
+    clear: (params) => request("DELETE", "/timetable/slot", { params }),
+  },
+  leave: {
+    list: (status) => request("GET", "/leave", { params: { status } }),
+    request: (body) => request("POST", "/leave", { body }),
+    decide: (id, approve, note) => request("POST", `/leave/${id}/decision`, { body: { approve, note } }),
+    cancel: (id) => request("POST", `/leave/${id}/cancel`, { body: {} }),
+  },
+  results: {
+    status: (params) => request("GET", "/results/status", { params }),
+    publish: (body) => request("POST", "/results/publish", { body }),
+    reportCard: (id, academicYear) => request("GET", `/students/${id}/report-card`, { params: { academicYear } }),
+  },
+  audit: { list: (params) => request("GET", "/audit", { params }) },
+  promotion: { run: (body) => request("POST", "/promotion", { body }) },
   register: {
     get: (params) => request("GET", "/attendance/register", { params }),
     save: (body) => request("PUT", "/attendance/register", { body }),
