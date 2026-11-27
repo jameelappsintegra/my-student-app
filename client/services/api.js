@@ -136,6 +136,7 @@ export const api = {
     submissions: (id) => request("GET", `/homework/${id}/submissions`),
     review: (id, subId, body) => request("POST", `/homework/${id}/submissions/${subId}/review`, { body }),
   },
+  insights: { forClass: (params) => request("GET", "/insights/class", { params }) },
   settings: {
     get: (school) => request("GET", `/schools/${school}/settings`),
     save: (school, body) => request("PUT", `/schools/${school}/settings`, { body }),
@@ -237,5 +238,7 @@ export const api = {
     recordPayment: (id, fid, body) => request("POST", `/students/${id}/fees/${fid}/payments`, { body }),
     removePayment: (id, fid, pid) => request("DELETE", `/students/${id}/fees/${fid}/payments/${pid}`),
     services: (id) => request("GET", `/students/${id}/services`),
+    progress: (id) => request("GET", `/students/${id}/progress`),
+    receipt: (id, invoiceId, paymentId) => request("GET", `/students/${id}/fees/${invoiceId}/payments/${paymentId}/receipt`),
   },
 };

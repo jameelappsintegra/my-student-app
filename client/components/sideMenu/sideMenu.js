@@ -18,7 +18,7 @@ const Sidemenu = () => {
         <a className="block px-3 mb-6 text-2xl font-bold text-primary">EduPro</a>
       </Link>
       <ul className="space-y-1 flex-1">
-        {sidebarItems(can).map((item) => {
+        {sidebarItems(can, user?.role).map((item) => {
           const active = isActive(router.pathname, item.link);
           return (
             <li key={item.link}>

@@ -39,6 +39,7 @@ export default function TeacherHome() {
                 <div className="flex flex-wrap gap-2 mt-4">
                   <Link href={`/attendance?${q}&date=${todayIso()}`}><a className="btn btn-primary btn-sm">{done ? "Review register" : "Take attendance"}</a></Link>
                   <Link href={`/students?${q}`}><a className="btn btn-sm">Students</a></Link>
+                  <Link href={`/insights?${q}`}><a className="btn btn-sm">Insights</a></Link>
                 </div>
               </Card>
             );

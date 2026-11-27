@@ -32,7 +32,7 @@ export default function StudentHome() {
             <div className="rounded-lg bg-slate-50 p-2"><dt className="text-xs text-slate-500">{k.latestResult?.exam || "Results"}</dt><dd className="font-semibold">{k.latestResult ? `${k.latestResult.percentage}% ${k.latestResult.grade}` : "—"}</dd></div>
           </dl>
           <div className="grid grid-cols-2 gap-2 mt-4">
-            <Link href={`/students/${k.id}?tab=academics`}><a className="btn btn-sm">My results</a></Link>
+            <Link href="/progress"><a className="btn btn-sm">My progress</a></Link>
             <Link href={`/students/${k.id}/report-card`}><a className="btn btn-sm">Report card</a></Link>
             <Link href="/timetable"><a className="btn btn-sm">Timetable</a></Link>
             <Link href="/library"><a className="btn btn-sm">Library</a></Link>

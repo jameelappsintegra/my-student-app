@@ -269,7 +269,10 @@ describe("library", () => {
     expect((await principal.put(`/api/library/books/${b.id}`).send(book({ copies: 0 }))).status).toBe(400);
 
     // Make the loan 5 days overdue.
-    await BookIssue.updateOne({ _id: i.body.data.id }, { $set: { dueAt: new Date(Date.now() - 5 * DAY) } });
+    // Dates are counted in the school's time zone, so set it from there (at
+    // some hours of the day the UTC date is already a day behind).
+    const localToday = require("../../src/services/schoolSettings").todayIn("Asia/Kolkata");
+    await BookIssue.updateOne({ _id: i.body.data.id }, { $set: { dueAt: new Date(new Date(`${localToday}T00:00:00.000Z`).getTime() - 5 * DAY) } });
     const overdue = (await principal.get("/api/library/issues?status=overdue")).body.data;
     expect(overdue).toEqual([expect.objectContaining({ overdue: true, student: expect.objectContaining({ name: "Kid1 Campus" }) })]);
     await principal.put(`/api/schools/${schoolId()}/settings`).send({ library: { finePerDay: 5 } });

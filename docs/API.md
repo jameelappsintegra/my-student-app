@@ -234,3 +234,11 @@ All need staff access; changes need `transport.manage` (admin, principal, or a t
 | POST | `/certificates/:id/cancel` | `{ reason }`. Cancelling a TC puts the student back to their previous status. |
 | GET | `/certificates/verify/:code` | **Public.** Only type, serial, student name, school, issue date and status. |
 | GET | `/students/:id/services` | Bus assignment, library loans and certificates for one student (not available under a cross-school share). |
+
+## Progress, class insights and receipts
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| GET | `/students/:id/progress` | Anyone who can see the student (not under a cross-school share). For the school's academic year: `results { exams, subjects (with previous and change), latest, change }`, `attendance { percentage, schoolDays, absent, monthly }`, `homework { summary, recent }`, `library { onLoan, overdue }`, and `fees` only for people with `fees.view`. Parents and students get published results only. |
+| GET | `/insights/class?school=&className=&section=` | `reports.view` and assigned to the class (principals: their schools). Per student: attendance, latest exam (drafts included), online homework handed in, fees (only with `fees.view`) and `flags` (`low_attendance`, `failing`, `missing_homework`, `fees_overdue`). Plus `summary` and `daily` attendance for the last 14 marked days. |
+| GET | `/students/:id/fees/:invoiceId/payments/:paymentId/receipt` | `fees.view`. Receipt number, date, amount (`amountText` in the school's currency), method, reference, the bill, the balance after this payment, student and school details. |

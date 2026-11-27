@@ -42,22 +42,24 @@ beforeEach(() => jest.clearAllMocks());
 test("each role gets its own menu, tabs and colour theme", async () => {
   const items = (role, extra = []) => {
     const perms = [...permissionsFor(role), ...extra];
-    return sidebarItems((p) => perms.includes(p)).map((i) => i.name);
+    return sidebarItems((p) => perms.includes(p), role).map((i) => i.name);
   };
   expect(items("admin")).toEqual(expect.arrayContaining(["Users", "Schools", "Import students", "Reports", "Shared records"]));
-  expect(items("teacher")).toEqual(["Home", "Students", "Attendance", "Homework", "Timetable", "Calendar", "Announcements", "Leave requests", "Reports", "Library", "Shared records"]);
+  expect(items("teacher")).toEqual(["Home", "Students", "Attendance", "Homework", "Class insights", "Timetable", "Calendar", "Announcements", "Leave requests", "Reports", "Library", "Shared records"]);
   expect(items("teacher", ["library.manage", "transport.manage"])).toEqual(expect.arrayContaining(["Library", "Transport"]));
   expect(items("principal")).toEqual(expect.arrayContaining(["Transport", "Certificates", "School settings"]));
-  expect(items("student")).toEqual(["Home", "Homework", "Timetable", "Calendar", "Announcements", "Library"]);
+  expect(items("student")).toEqual(["Home", "Homework", "Progress", "Timetable", "Calendar", "Announcements", "Library"]);
   const studentPerms = permissionsFor("student");
-  expect(tabItems((p) => studentPerms.includes(p), "student").map((i) => i.short)).toEqual(["Home", "Homework", "Timetable", "Calendar", "Account"]);
+  expect(tabItems((p) => studentPerms.includes(p), "student").map((i) => i.short)).toEqual(["Home", "Homework", "Progress", "Timetable", "Account"]);
   expect(items("principal")).toEqual(expect.arrayContaining(["Publish results", "Promote students", "Leave requests"]));
   expect(items("principal")).not.toContain("Audit log");
   expect(items("admin")).toContain("Audit log");
   expect(items("teacher", ["students.import"])).toContain("Import students");
-  expect(items("parent")).toEqual(["Home", "Homework", "Timetable", "Calendar", "Announcements", "Leave requests", "Library"]);
+  expect(items("parent")).toEqual(["Home", "Homework", "Progress", "Fees & receipts", "Timetable", "Calendar", "Announcements", "Leave requests", "Library"]);
+  expect(items("admin")).not.toContain("Fees & receipts");
+  expect(items("admin")).toContain("Class insights");
   const parentPerms = permissionsFor("parent");
-  expect(tabItems((p) => parentPerms.includes(p), "parent").map((i) => i.short)).toEqual(["Home", "Homework", "Leave", "Account"]);
+  expect(tabItems((p) => parentPerms.includes(p), "parent").map((i) => i.short)).toEqual(["Home", "Homework", "Progress", "Leave", "Account"]);
   const teacherPerms = permissionsFor("teacher");
   expect(tabItems((p) => teacherPerms.includes(p), "teacher").map((i) => i.short)).toEqual(["Home", "Students", "Attendance", "Homework"]);
 

@@ -45,6 +45,7 @@ router.use("/audit", perm("audit.view"), require("./audit"));
 router.use("/promotion", perm("students.promote"), require("./promotion"));
 router.use("/identity", require("./identity"));
 router.use("/transport", require("./transport"));
+router.use("/insights", perm("reports.view"), require("./insights"));
 router.use("/library", require("./library"));
 router.use("/certificates", require("./certificates"));
 

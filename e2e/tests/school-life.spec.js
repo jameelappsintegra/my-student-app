@@ -129,7 +129,7 @@ test("new pages fit a phone screen", async ({ page, browser }) => {
   const { ctx, page: parent } = await signInAs(browser, s.parent, { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   await parent.goto("/");
   const tabs = parent.getByRole("navigation", { name: "Tabs" });
-  await expect(tabs.getByRole("link")).toHaveText(["Home", "Homework", "Leave", "Account"]);
+  await expect(tabs.getByRole("link")).toHaveText(["Home", "Homework", "Progress", "Leave", "Account"]);
   for (const path of ["/", "/homework", "/leave", "/announcements", "/timetable", "/account", `/students/${s.student.id}/report-card`]) {
     await parent.goto(path);
     await parent.waitForLoadState("networkidle");

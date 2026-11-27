@@ -45,7 +45,8 @@ export default function ParentHome() {
               <div className="flex flex-wrap gap-2 mt-4">
                 <Link href={`/students/${k.id}`}><a className="btn btn-primary btn-sm">View profile</a></Link>
                 <Link href={`/students/${k.id}?tab=attendance`}><a className="btn btn-sm">Attendance</a></Link>
-                <Link href={`/students/${k.id}?tab=fees`}><a className="btn btn-sm">Fees</a></Link>
+                <Link href="/progress"><a className="btn btn-sm">Progress</a></Link>
+                <Link href="/fees"><a className="btn btn-sm">Fees &amp; receipts</a></Link>
               </div>
             </Card>
           ))}

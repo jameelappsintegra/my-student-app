@@ -1,12 +1,16 @@
 // Navigation. Items show only to people with the permission (the API checks
-// again). `mobile` items appear in the phone's bottom tab bar.
+// again), and, when `roles` is set, only to those roles. `mobile` items
+// appear in the phone's bottom tab bar.
 const menuItems = [
   { name: "Home", short: "Home", link: "/", icon: "home", mobile: true },
   { name: "Students", short: "Students", link: "/students", icon: "students", mobile: true, perm: "students.search" },
   { name: "Attendance", short: "Attendance", link: "/attendance", icon: "calendar", mobile: true, perm: "attendance.mark" },
   { name: "Homework", short: "Homework", link: "/homework", icon: "book", mobile: ["teacher", "parent", "student"] },
+  { name: "Progress", short: "Progress", link: "/progress", icon: "chart", roles: ["parent", "student"], mobile: ["parent", "student"] },
+  { name: "Fees & receipts", short: "Fees", link: "/fees", icon: "wallet", perm: "fees.view", roles: ["parent"] },
+  { name: "Class insights", short: "Insights", link: "/insights", icon: "chart", perm: "reports.view", roles: ["teacher", "principal", "admin"] },
   { name: "Timetable", short: "Timetable", link: "/timetable", icon: "clock", mobile: "student" },
-  { name: "Calendar", short: "Calendar", link: "/calendar", icon: "calendar", mobile: "student" },
+  { name: "Calendar", short: "Calendar", link: "/calendar", icon: "calendar" },
   { name: "Announcements", link: "/announcements", icon: "megaphone" },
   { name: "Leave requests", short: "Leave", link: "/leave", icon: "leave", perm: ["leave.request", "leave.decide"], mobile: "parent" },
   { name: "Admissions", short: "Admissions", link: "/admissions", icon: "admissions", mobile: true, perm: "admissions.manage" },
@@ -28,9 +32,9 @@ const menuItems = [
 ];
 
 const allowed = (can, perm) => !perm || (Array.isArray(perm) ? perm.some(can) : can(perm));
-export const visibleItems = (can) => menuItems.filter((m) => allowed(can, m.perm));
-export const sidebarItems = (can) => visibleItems(can).filter((m) => m.sidebar !== false);
+export const visibleItems = (can, role) => menuItems.filter((m) => allowed(can, m.perm) && (!m.roles || m.roles.includes(role)));
+export const sidebarItems = (can, role) => visibleItems(can, role).filter((m) => m.sidebar !== false);
 export const tabItems = (can, role) =>
-  visibleItems(can).filter((m) => m.mobile === true || m.mobile === role || (Array.isArray(m.mobile) && m.mobile.includes(role))).slice(0, 5);
+  visibleItems(can, role).filter((m) => m.mobile === true || m.mobile === role || (Array.isArray(m.mobile) && m.mobile.includes(role))).slice(0, 5);
 
 export default menuItems;

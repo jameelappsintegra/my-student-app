@@ -116,6 +116,24 @@ router.delete("/fees/:invoiceId/payments/:paymentId", perm("fees.manage"), idPar
   sendSuccess(res, { message: "Payment removed", data });
 }));
 
+// Progress over the academic year: exams, subjects, attendance by month,
+// homework hand-in, library and (for those who may see them) fees.
+router.get("/progress", h(async (req, res) => {
+  if (req.share) throw new ApiError(403, "Shared records don't include the progress summary.");
+  const { can } = require("../constants/permissions");
+  const data = await require("../services/progressService").studentProgress(req.params.id, {
+    publishedOnly: ["parent", "student"].includes(req.user.role),
+    withFees: can(req.user, "fees.view"),
+  });
+  sendSuccess(res, { message: "Progress", data });
+}));
+
+// A printable receipt for one payment.
+router.get("/fees/:invoiceId/payments/:paymentId/receipt", perm("fees.view"), idParam("invoiceId"), idParam("paymentId"), h(async (req, res) => {
+  if (req.share) throw new ApiError(403, "Shared records don't include receipts.");
+  sendSuccess(res, { message: "Receipt", data: await require("../services/progressService").receipt(req.params.id, req.params.invoiceId, req.params.paymentId) });
+}));
+
 // Transport, library loans and certificates for one student.
 router.get("/services", h(async (req, res) => {
   if (req.share) throw new ApiError(403, "Shared records don't include school services.");

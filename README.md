@@ -37,6 +37,9 @@ EduPro is a school management app. This repository holds three parts:
 - **Transport**: bus routes with vehicle, driver, attendant, seats and ordered stops (pickup and drop times, per-stop fee). Students are assigned to a stop; capacity is enforced; the riders list prints with a parent phone per child. Parents and students see the bus on the profile's **Bus & library** tab.
 - **Library**: catalogue per school (title, author, ISBN, category, shelf, copies), lending with a due date, returns, overdue list, and late fines worked out from the school's daily fine. Students can't borrow while a fine is unpaid or past the school's limit. Students and parents can browse the catalogue.
 - **Certificates**: transfer (TC), bonafide, character and study certificates with serial numbers like `GVPS/TC/2026/0001`, printed on the school's letterhead. A TC checks fee dues (it can be issued anyway after confirming) and marks the student as transferred; cancelling restores them. Each certificate carries a random code that anyone can check at `/verify/<code>` without signing in.
+- **Progress** (parents, for each child, and students): the year's exam trend against the pass mark, each subject compared with the previous exam, attendance by month (months under 75% in red), homework handed in, missing and marked, library loans and (parents) fees due.
+- **Fees & receipts** (parents): every child's bills and payments in one place, with a printable receipt for each payment (receipt number, amount in the school's currency, method, balance after payment).
+- **Class insights** (teachers for their classes, principals and admins): average attendance, latest-exam average, homework hand-in rate, the last marked days as a chart, and every student flagged for low attendance, a failed exam, missing homework or (principals) overdue fees, with filters. Teachers open it from each class card on their home screen.
 - **School settings** (per school): currency and number format, time zone, the month the academic year starts, weekly off days, terms, holidays, grading scale and pass mark, library fine/loan period/book limit, and whether late homework is accepted. Results, report cards, reports, fee amounts, leave approval, the register's holiday warning and "today" all follow these settings. A **Calendar** page shows holidays, terms, events and homework due dates.
 
 > 🔐 **Sign-in is required.** Every page and every data endpoint needs a session (except the certificate verification page).
@@ -125,10 +128,10 @@ More detail: [docs/API.md](docs/API.md) · [docs/DEPLOYMENT.md](docs/DEPLOYMENT.
 | Command | What it covers | Count |
 | --- | --- | --- |
 | `cd server && npm run test:unit` | validators, query helpers, sanitizer, error mapping, env config, password hashing | 53 |
-| `cd server && npm run test:integration` | API against an in-memory MongoDB replica set: auth, roles and scoping, admissions, students, records, register, reports, import, sharing, Aadhaar, school-life modules, student logins, homework submissions, settings and calendar, transport, library and certificates | 132 |
-| `cd server && npm test` | both of the above (`npm run test:coverage` for coverage) | 185 |
-| `cd client && npm test` | React pages and components for every role, including the new homework hand-in and marking, settings, library, certificates, verification, calendar and student home | 69 |
-| `cd e2e && npm install && npm test` | builds the web app, starts a throwaway database, an admin and the API, then runs Playwright on desktop and a phone | 26 |
+| `cd server && npm run test:integration` | API against an in-memory MongoDB replica set: auth, roles and scoping, admissions, students, records, register, reports, import, sharing, Aadhaar, school-life modules, student logins, homework submissions, settings and calendar, transport, library, certificates, progress, class insights and receipts | 138 |
+| `cd server && npm test` | both of the above (`npm run test:coverage` for coverage) | 191 |
+| `cd client && npm test` | React pages and components for every role, including homework hand-in and marking, settings, library, certificates, verification, calendar, student home, progress, fees and receipts, and class insights | 76 |
+| `cd e2e && npm install && npm test` | builds the web app, starts a throwaway database, an admin and the API, then runs Playwright on desktop and a phone | 27 |
 
 The server and e2e tests download a MongoDB binary on first run. If your network blocks that, set `MONGOMS_SYSTEM_BINARY=/path/to/mongod` (and `MONGOMS_VERSION` to its version). The e2e suite uses Playwright's Chromium (`npx playwright install chromium`).
 
