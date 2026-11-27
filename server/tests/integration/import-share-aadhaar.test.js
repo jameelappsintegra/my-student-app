@@ -123,6 +123,9 @@ describe("cross-school sharing", () => {
     expect(view.body.data).toMatchObject({ firstName: "Shared", className: "6", sharedAccess: { scopes: ["academic"] } });
     expect(view.body.data.address).toBeUndefined();
     expect(view.body.data.father).toBeUndefined();
+    // Shared results are visible only once published.
+    expect((await ts.get(`/api/students/${otherStudent.id}/results`)).body.data).toEqual([]);
+    await admin.post("/api/results/publish").send({ school: other, className: "6", section: "A", academicYear: "2026-2027", exam: "Term 1" });
     expect((await ts.get(`/api/students/${otherStudent.id}/results`)).body.data[0].percentage).toBe(81);
     expect((await ts.get(`/api/students/${otherStudent.id}/attendance`)).status).toBe(403);
     expect((await ts.get(`/api/students/${otherStudent.id}/fees`)).status).toBe(403);

@@ -57,6 +57,7 @@ async function getAttendance(studentId, { from, to }) {
 // Marks or corrects one day (upsert keeps one record per student per day).
 async function markAttendance(studentId, date, { status, note }) {
   const student = await loadStudent(studentId);
+  const before = await Attendance.findOne({ student: student._id, date: toDay(date) }).select("status").lean();
   const record = await Attendance.findOneAndUpdate(
     { student: student._id, date: toDay(date) },
     note
@@ -64,7 +65,21 @@ async function markAttendance(studentId, date, { status, note }) {
       : { $set: { status, school: student.school }, $unset: { note: 1 } },
     { upsert: true, new: true, runValidators: true }
   ).lean();
+  if (status === "absent" && before?.status !== "absent") await notifyAbsent([student._id], date);
   return { date, status: record.status, note: record.note || undefined };
+}
+
+// Tells parents when their child is newly marked absent.
+async function notifyAbsent(studentIds, date) {
+  const { notify, parentsOf } = require("./notificationService");
+  const kids = await Student.find({ _id: { $in: studentIds } }).select("firstName lastName").lean();
+  const names = new Map(kids.map((k) => [String(k._id), `${k.firstName} ${k.lastName}`]));
+  for (const p of await parentsOf(studentIds)) {
+    const mine = (p.children || []).map(String).filter((c) => names.has(c));
+    for (const c of mine) {
+      await notify([p._id], { type: "attendance", title: `${names.get(c)} was absent today`, body: `Marked absent on ${date}. Contact the school if this is a mistake.`, link: `/students/${c}?tab=attendance` });
+    }
+  }
 }
 
 async function clearAttendance(studentId, date) {
@@ -74,9 +89,9 @@ async function clearAttendance(studentId, date) {
 }
 
 // ---------- Exam results ----------
-async function listResults(studentId) {
+async function listResults(studentId, { publishedOnly = false } = {}) {
   const student = await loadStudent(studentId);
-  const results = await ExamResult.find({ student: student._id }).sort({ academicYear: -1, examDate: -1, createdAt: -1 });
+  const results = await ExamResult.find({ student: student._id, ...(publishedOnly ? { status: "published" } : {}) }).sort({ academicYear: -1, examDate: -1, createdAt: -1 });
   return results.map((r) => r.toJSON());
 }
 
@@ -101,8 +116,16 @@ async function createResult(studentId, input) {
   }
 }
 
-async function updateResult(studentId, resultId, changes) {
+// Published marks are locked unless the user may (un)publish results.
+function assertEditable(result, user) {
+  if (result.status === "published" && user && !require("../constants/permissions").can(user, "results.publish")) {
+    throw new ApiError(403, "These results are published. Ask the principal to unpublish them before changing marks.");
+  }
+}
+
+async function updateResult(studentId, resultId, changes, user) {
   const result = await findResult(studentId, resultId);
+  assertEditable(result, user);
   result.set(changes);
   try {
     await result.save();
@@ -112,8 +135,9 @@ async function updateResult(studentId, resultId, changes) {
   return result.toJSON();
 }
 
-async function deleteResult(studentId, resultId) {
+async function deleteResult(studentId, resultId, user) {
   const result = await findResult(studentId, resultId);
+  assertEditable(result, user);
   await result.deleteOne();
 }
 
@@ -214,4 +238,5 @@ module.exports = {
   recordPayment,
   removePayment,
   academicYearStart,
+  notifyAbsent,
 };

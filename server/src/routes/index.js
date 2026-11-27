@@ -34,6 +34,14 @@ router.get("/users/:id/photo", h(async (req, res, next) => {
 }));
 router.use("/users", perm("users.manage"), require("./users"));
 router.use("/shares", require("./shares"));
+router.use("/notifications", require("./notifications"));
+router.use("/announcements", require("./announcements"));
+router.use("/homework", require("./homework"));
+router.use("/timetable", require("./timetable"));
+router.use("/leave", require("./leave"));
+router.use("/results", require("./results"));
+router.use("/audit", perm("audit.view"), require("./audit"));
+router.use("/promotion", perm("students.promote"), require("./promotion"));
 router.use("/identity", require("./identity"));
 
   return router;

@@ -41,6 +41,8 @@ function createApp(options = {}) {
       },
     })
   );
+  // Every log line with an `event` is also kept in the audit log.
+  app.use(require("./middleware/auditLog"));
   app.use(helmet());
   app.use(
     cors({

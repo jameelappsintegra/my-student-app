@@ -34,7 +34,9 @@ router.delete("/attendance/:date", perm("attendance.mark"), dateParam, h(async (
 }));
 
 router.get("/results", shareAllows("academic"), h(async (req, res) => {
-  sendSuccess(res, { message: "Results", data: await r.listResults(req.params.id) });
+  // Parents, and other schools under a share, see published results only.
+  const publishedOnly = req.user.role === "parent" || Boolean(req.share);
+  sendSuccess(res, { message: "Results", data: await r.listResults(req.params.id, { publishedOnly }) });
 }));
 router.post("/results", perm("results.manage"), validate(v.createResult), h(async (req, res) => {
   const data = await r.createResult(req.params.id, req.valid.body);
@@ -42,14 +44,38 @@ router.post("/results", perm("results.manage"), validate(v.createResult), h(asyn
   sendSuccess(res, { status: 201, message: `${data.exam} marks saved`, data });
 }));
 router.put("/results/:resultId", perm("results.manage"), idParam("resultId"), validate(v.updateResult), h(async (req, res) => {
-  const data = await r.updateResult(req.params.id, req.params.resultId, req.valid.body);
+  const data = await r.updateResult(req.params.id, req.params.resultId, req.valid.body, req.user);
   audit(req, "result.update", { resultId: data.id });
   sendSuccess(res, { message: `${data.exam} marks updated`, data });
 }));
 router.delete("/results/:resultId", perm("results.manage"), idParam("resultId"), h(async (req, res) => {
-  await r.deleteResult(req.params.id, req.params.resultId);
+  await r.deleteResult(req.params.id, req.params.resultId, req.user);
   audit(req, "result.delete", { resultId: req.params.resultId });
   sendSuccess(res, { message: "Result deleted" });
+}));
+
+// Report card data for one academic year (printable page in the web app).
+router.get("/report-card", shareAllows("academic"), h(async (req, res) => {
+  const Student = require("../models/Student");
+  const year = typeof req.query.academicYear === "string" && /^\d{4}-\d{4}$/.test(req.query.academicYear) ? req.query.academicYear : null;
+  const student = await Student.findById(req.params.id).populate("school", "name code address city phone principalName board").lean();
+  const academicYear = year || student.academicYear;
+  const publishedOnly = req.user.role === "parent" || Boolean(req.share);
+  const results = (await r.listResults(req.params.id, { publishedOnly })).filter((x) => x.academicYear === academicYear);
+  const [y1] = academicYear.split("-").map(Number);
+  const attendance = await r.getAttendance(req.params.id, { from: `${y1}-04-01`, to: new Date(Math.min(Date.now(), Date.UTC(y1 + 1, 2, 31))).toISOString().slice(0, 10) });
+  sendSuccess(res, {
+    message: "Report card",
+    data: {
+      academicYear,
+      student: { id: String(student._id), name: [student.firstName, student.middleName, student.lastName].filter(Boolean).join(" "), admissionNumber: student.admissionNumber, className: student.className, section: student.section, rollNumber: student.rollNumber, dateOfBirth: student.dateOfBirth, father: student.father?.name, mother: student.mother?.name },
+      school: student.school,
+      results,
+      attendance: attendance.summary,
+      generatedAt: new Date(),
+      includesDrafts: results.some((x) => x.status !== "published"),
+    },
+  });
 }));
 
 router.get("/fees", shareAllows("fees"), (req, res, next) => (req.share ? next() : perm("fees.view")(req, res, next)), h(async (req, res) => {

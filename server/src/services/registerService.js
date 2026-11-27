@@ -52,6 +52,7 @@ async function saveRegister({ school, className, section, date, entries }) {
   }
   const day = toDay(date);
   const schoolId = new mongoose.Types.ObjectId(school);
+  const before = new Map((await Attendance.find({ student: { $in: ids }, date: day }).select("student status").lean()).map((a) => [String(a.student), a.status]));
   const ops = entries.map((e) => ({
     updateOne: {
       filter: { student: new mongoose.Types.ObjectId(e.student), date: day },
@@ -62,6 +63,8 @@ async function saveRegister({ school, className, section, date, entries }) {
     },
   }));
   await Attendance.bulkWrite(ops, { ordered: false });
+  const newlyAbsent = entries.filter((e) => e.status === "absent" && before.get(e.student) !== "absent").map((e) => e.student);
+  if (newlyAbsent.length) await require("./recordsService").notifyAbsent(newlyAbsent, date);
   const counts = {};
   for (const e of entries) counts[e.status] = (counts[e.status] || 0) + 1;
   return { date, saved: entries.length, counts };

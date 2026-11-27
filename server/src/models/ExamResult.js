@@ -30,6 +30,11 @@ const examResultSchema = new mongoose.Schema(
       validate: [(v) => v.length >= 1 && v.length <= 15, "Enter between 1 and 15 subjects"],
     },
     remarks: { type: String, trim: true, maxlength: 500 },
+    // Parents only see published results; published marks are locked for
+    // teachers until a principal or admin unpublishes them.
+    status: { type: String, enum: ["draft", "published"], default: "draft" },
+    publishedAt: Date,
+    publishedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },
   {
     timestamps: true,
@@ -44,6 +49,7 @@ const examResultSchema = new mongoose.Schema(
 
 // One result per exam per student per year.
 examResultSchema.index({ student: 1, academicYear: 1, exam: 1 }, { unique: true });
+examResultSchema.index({ school: 1, academicYear: 1, exam: 1, status: 1 });
 
 function withScores(ret) {
   ret.subjects = ret.subjects.map((s) => {
