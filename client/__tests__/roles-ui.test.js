@@ -58,12 +58,15 @@ test("each role gets its own menu, tabs and colour theme", async () => {
   expect(items("parent")).toEqual(["Home", "Homework", "Progress", "Fees & receipts", "Timetable", "Calendar", "Announcements", "Leave requests", "Library"]);
   expect(items("admin")).not.toContain("Fees & receipts");
   expect(items("admin")).toContain("Class insights");
+  expect(items("librarian")).toEqual(["Home", "Timetable", "Calendar", "Announcements", "Library"]);
+  const libPerms = permissionsFor("librarian");
+  expect(tabItems((p) => libPerms.includes(p), "librarian").map((i) => i.short)).toEqual(["Home", "Library", "Account"]);
   const parentPerms = permissionsFor("parent");
   expect(tabItems((p) => parentPerms.includes(p), "parent").map((i) => i.short)).toEqual(["Home", "Homework", "Progress", "Leave", "Account"]);
   const teacherPerms = permissionsFor("teacher");
   expect(tabItems((p) => teacherPerms.includes(p), "teacher").map((i) => i.short)).toEqual(["Home", "Students", "Attendance", "Homework"]);
 
-  for (const [role, theme] of [["teacher", "edupro-teacher"], ["parent", "edupro-parent"], ["principal", "edupro-principal"], ["student", "edupro-student"], ["admin", "edupro"]]) {
+  for (const [role, theme] of [["teacher", "edupro-teacher"], ["parent", "edupro-parent"], ["principal", "edupro-principal"], ["student", "edupro-student"], ["librarian", "edupro-librarian"], ["admin", "edupro"]]) {
     asRole(role);
     const { unmount } = render(<AuthProvider><p>page</p></AuthProvider>);
     await screen.findByText("page");

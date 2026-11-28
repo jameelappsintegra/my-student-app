@@ -45,7 +45,7 @@ export function AuthProvider({ children }) {
     const role = state.user?.role;
     const name = !role || role === "admin" ? "edupro" : `edupro-${role}`;
     document.documentElement.setAttribute("data-theme", name);
-    const colors = { edupro: "#4f46e5", "edupro-principal": "#0f766e", "edupro-teacher": "#15803d", "edupro-parent": "#c2410c", "edupro-student": "#7c3aed" };
+    const colors = { edupro: "#4f46e5", "edupro-principal": "#0f766e", "edupro-teacher": "#15803d", "edupro-parent": "#c2410c", "edupro-student": "#7c3aed", "edupro-librarian": "#a16207" };
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", colors[name]);
   }, [state.user?.role]);
 

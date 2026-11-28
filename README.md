@@ -35,7 +35,11 @@ EduPro is a school management app. This repository holds three parts:
 - **Student logins**: each student signs in to see their own record, published results, timetable, calendar and library catalogue. Admins create logins one at a time or for a whole class (usernames are admission numbers; random passwords are shown once and can be downloaded as CSV).
 - **Online homework**: teachers can ask for work to be handed in online, optionally out of a mark. Students type an answer and/or add a link; work after the due date is flagged late (or refused, per school). Teachers see who handed in, who hasn't, mark it or return it for changes; students and parents are notified.
 - **Transport**: bus routes with vehicle, driver, attendant, seats and ordered stops (pickup and drop times, per-stop fee). Students are assigned to a stop; capacity is enforced; the riders list prints with a parent phone per child. Parents and students see the bus on the profile's **Bus & library** tab.
-- **Library**: catalogue per school (title, author, ISBN, category, shelf, copies), lending with a due date, returns, overdue list, and late fines worked out from the school's daily fine. Students can't borrow while a fine is unpaid or past the school's limit. Students and parents can browse the catalogue.
+- **Library**: catalogue per school (title, author, ISBN, category, shelf, copies), lending with a due date, returns, overdue list, and late fines worked out from the school's daily fine. Students can't borrow while a fine is unpaid or past the school's limit.
+  - **Librarian accounts** (role `librarian`, linked to a school): a home dashboard with books and copies on the shelf, loans, overdue, due today, unpaid fines, fines collected this month, reservations and the most-borrowed books. They can find any student in their school to lend to, but can't open student records.
+  - **Renewals** (up to 2, not when overdue or when others are waiting) and **overdue reminders** to the student and parents, one at a time or for every overdue loan (skipping those reminded in the last 2 days).
+  - **Reservations**: students and parents reserve a book whose copies are all out and see their place in the queue. When a copy comes back it is kept for the first in line for 3 days; they are notified, and it can only be lent to them. Unclaimed holds expire and pass to the next student.
+  - **Import books from CSV** with a template, a check-first preview and row-by-row errors; a matching ISBN (or title and author) adds copies to the existing book.
 - **Certificates**: transfer (TC), bonafide, character and study certificates with serial numbers like `GVPS/TC/2026/0001`, printed on the school's letterhead. A TC checks fee dues (it can be issued anyway after confirming) and marks the student as transferred; cancelling restores them. Each certificate carries a random code that anyone can check at `/verify/<code>` without signing in.
 - **Progress** (parents, for each child, and students): the year's exam trend against the pass mark, each subject compared with the previous exam, attendance by month (months under 75% in red), homework handed in, missing and marked, library loans and (parents) fees due.
 - **Fees & receipts** (parents): every child's bills and payments in one place, with a printable receipt for each payment (receipt number, amount in the school's currency, method, balance after payment).
@@ -55,7 +59,8 @@ EduPro is a school management app. This repository holds three parts:
 | Principal (head of school or department) | Their own schools | Dashboard, all students, attendance, marks, fees (view), every report; approves sharing requests | Teal |
 | Teacher | Their assigned classes | Attendance register, marks, student photos, class reports; can request records from other schools | Green |
 | Parent | Their own children | Profile, attendance, published results and fees (read-only); can update their child's photo; requests leave | Orange |
-| Student | Their own record | Profile, attendance, published results, timetable, calendar, library catalogue; hands in homework online | Violet |
+| Student | Their own record | Profile, attendance, published results, timetable, calendar, library catalogue and reservations; hands in homework online | Violet |
+| Librarian | Their school's library | Catalogue, lending, returns, renewals, fines, reservations, reminders and book import; finds students to lend to but can't open their records | Amber |
 
 - Permissions live in `server/src/constants/permissions.js` and are checked on every API route. Records outside someone's scope return 404.
 - Admins can switch on extra permissions per person: **Can import students** (teacher or principal; a teacher imports only into their own classes), **Runs the library** and **Manages school buses** (teachers).
@@ -88,7 +93,7 @@ EDUPRO_ADMIN_PASSWORD='at least 12 characters' npm run create-admin -- admin "Sc
 npm run seed              # optional: 3 sample schools with ~85 students, photos, marks, attendance, fees
                           # (npm run seed -- --reset replaces them; refused when NODE_ENV=production)
                           # SEED_USER_PASSWORD='…' also creates demo accounts for each role:
-                          # principal.gvps, teacher.gvps, principal.smms, teacher.smms, parent.demo, student.gvps
+                          # principal.gvps, teacher.gvps, principal.smms, teacher.smms, parent.demo, student.gvps, librarian.gvps
 npm run dev               # http://localhost:5000/api
 
 # 2. Web app (second terminal)
@@ -128,10 +133,10 @@ More detail: [docs/API.md](docs/API.md) · [docs/DEPLOYMENT.md](docs/DEPLOYMENT.
 | Command | What it covers | Count |
 | --- | --- | --- |
 | `cd server && npm run test:unit` | validators, query helpers, sanitizer, error mapping, env config, password hashing | 53 |
-| `cd server && npm run test:integration` | API against an in-memory MongoDB replica set: auth, roles and scoping, admissions, students, records, register, reports, import, sharing, Aadhaar, school-life modules, student logins, homework submissions, settings and calendar, transport, library, certificates, progress, class insights and receipts | 138 |
-| `cd server && npm test` | both of the above (`npm run test:coverage` for coverage) | 191 |
-| `cd client && npm test` | React pages and components for every role, including homework hand-in and marking, settings, library, certificates, verification, calendar, student home, progress, fees and receipts, and class insights | 76 |
-| `cd e2e && npm install && npm test` | builds the web app, starts a throwaway database, an admin and the API, then runs Playwright on desktop and a phone | 27 |
+| `cd server && npm run test:integration` | API against an in-memory MongoDB replica set: auth, roles and scoping, admissions, students, records, register, reports, import, sharing, Aadhaar, school-life modules, student logins, homework submissions, settings and calendar, transport, library, certificates, progress, class insights, receipts and the librarian module | 145 |
+| `cd server && npm test` | both of the above (`npm run test:coverage` for coverage) | 198 |
+| `cd client && npm test` | React pages and components for every role, including homework hand-in and marking, settings, library, certificates, verification, calendar, student home, progress, fees and receipts, class insights and the librarian screens | 81 |
+| `cd e2e && npm install && npm test` | builds the web app, starts a throwaway database, an admin and the API, then runs Playwright on desktop and a phone | 28 |
 
 The server and e2e tests download a MongoDB binary on first run. If your network blocks that, set `MONGOMS_SYSTEM_BINARY=/path/to/mongod` (and `MONGOMS_VERSION` to its version). The e2e suite uses Playwright's Chromium (`npx playwright install chromium`).
 
@@ -143,7 +148,7 @@ CI (`.github/workflows/ci.yml`) runs all of these on every push.
 - Notifications are in-app only; email, SMS and WhatsApp aren't connected.
 - No online payment gateway; fee payments are recorded by staff.
 - Homework hand-in takes text and links, not file uploads.
-- A teacher who runs the library or buses finds students through search, which only covers their own classes. Principals and admins can find any student in their schools.
+- A teacher who runs the buses finds students through search, which only covers their own classes (librarian accounts and principals can find any student in their school).
 - Not built yet: hostel, inventory, payroll and HR, exam timetables and seating plans, ID cards.
 - Classes are a fixed list (LKG–12). Sections are free text.
 - Parent and guardian details are stored on each admission and student record, not as separate parent records.

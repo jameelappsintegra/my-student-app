@@ -4,7 +4,7 @@ import { Avatar, Card, Notice, PageHeader } from "../../components/common";
 import { useAuth } from "../../context/auth";
 import { api, ApiError } from "../../services/api";
 
-const ROLE_LABEL = { admin: "Administrator", principal: "Principal", teacher: "Teacher", parent: "Parent", student: "Student" };
+const ROLE_LABEL = { admin: "Administrator", principal: "Principal", teacher: "Teacher", parent: "Parent", student: "Student", librarian: "Librarian" };
 
 export default function Account() {
   const { user, setUser, signOut } = useAuth();

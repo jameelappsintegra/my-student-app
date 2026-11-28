@@ -38,7 +38,7 @@ function studentScope(user) {
       })),
     };
   }
-  if (user.role === "principal") {
+  if (user.role === "principal" || user.role === "librarian") {
     const list = (user.schools || []).map((s) => new mongoose.Types.ObjectId(String(s._id || s)));
     return list.length ? { school: { $in: list } } : NOTHING;
   }
@@ -96,7 +96,7 @@ function canTeach(user, { school, className, section }) {
 // Schools a user can see (for teachers: those in their assignments).
 function schoolScope(user) {
   if (user.role === "admin") return {};
-  if (user.role === "principal") {
+  if (user.role === "principal" || user.role === "librarian") {
     return { _id: { $in: (user.schools || []).map((s) => new mongoose.Types.ObjectId(String(s._id || s))) } };
   }
   if (user.role === "teacher") {
@@ -108,7 +108,7 @@ function schoolScope(user) {
 // School ids a user may see, or null for all (admin).
 function schoolIds(user) {
   if (user.role === "admin") return null;
-  if (user.role === "principal") return (user.schools || []).map((s) => String(s._id || s));
+  if (user.role === "principal" || user.role === "librarian") return (user.schools || []).map((s) => String(s._id || s));
   if (user.role === "teacher") return [...new Set((user.assignments || []).map((a) => String(a.school)))];
   return [];
 }

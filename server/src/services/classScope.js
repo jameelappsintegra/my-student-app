@@ -9,7 +9,7 @@ const oid = (x) => new mongoose.Types.ObjectId(String(x._id || x));
 // Filter over class-level documents the user may see, or null for "all".
 async function classFilter(user) {
   if (user.role === "admin") return null;
-  if (user.role === "principal") return { school: { $in: schoolIds(user).map(oid) } };
+  if (user.role === "principal" || user.role === "librarian") return { school: { $in: schoolIds(user).map(oid) } };
   if (user.role === "teacher") {
     const list = user.assignments || [];
     if (!list.length) return { _id: { $in: [] } };

@@ -159,6 +159,20 @@ export const api = {
     issue: (body) => request("POST", "/library/issues", { body }),
     returnBook: (id, fine) => request("POST", `/library/issues/${id}/return`, { body: fine ? { fine } : {} }),
     settleFine: (id, action) => request("POST", `/library/issues/${id}/fine`, { body: { action } }),
+    renew: (id) => request("POST", `/library/issues/${id}/renew`, { body: {} }),
+    remind: (id) => request("POST", `/library/issues/${id}/remind`, { body: {} }),
+    remindOverdue: (school) => request("POST", "/library/remind-overdue", { body: { school } }),
+    reserve: (bookId, student) => request("POST", `/library/books/${bookId}/reserve`, { body: student ? { student } : {} }),
+    reservations: (params) => request("GET", "/library/reservations", { params }),
+    cancelReservation: (id) => request("DELETE", `/library/reservations/${id}`),
+    dashboard: (school) => request("GET", "/library/dashboard", { params: { school } }),
+    importBooks: (school, file, dryRun) => {
+      const form = new FormData();
+      form.append("school", school);
+      form.append("file", file);
+      return request("POST", "/library/books/import", { form, params: { dryRun } });
+    },
+    importTemplateUrl: () => `${BASE_URL}/library/books/import/template`,
   },
   certificates: {
     list: (params) => request("GET", "/certificates", { params }),

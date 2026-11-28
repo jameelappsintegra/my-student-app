@@ -33,6 +33,7 @@ const TransportRoute = require("../src/models/TransportRoute");
 const Book = require("../src/models/Book");
 const BookIssue = require("../src/models/BookIssue");
 const Certificate = require("../src/models/Certificate");
+const BookReservation = require("../src/models/BookReservation");
 const { hashPassword } = require("../src/services/authService");
 const { setUserPhoto } = require("../src/services/userPhotoService");
 const { BUCKET } = require("../src/services/photoService");
@@ -82,6 +83,7 @@ const DEMO_USERS = [
   { username: "parent.demo", name: "Imran Rahman", role: "parent", school: "GVPS" },
   // Linked to the first student of GVPS class 7 A (also parent.demo's child).
   { username: "student.gvps", name: "", role: "student", school: "GVPS" },
+  { username: "librarian.gvps", name: "Saraswathi Iyer", role: "librarian", school: "GVPS" },
 ];
 
 const SUBJECTS = {
@@ -230,6 +232,7 @@ async function reset() {
     Book.deleteMany({}),
     BookIssue.deleteMany({}),
     Certificate.deleteMany({}),
+    BookReservation.deleteMany({}),
     // Demo accounts only; real admins are kept.
     User.deleteMany({ username: { $in: DEMO_USERS.map((u) => u.username) } }),
     db.collection("userPhotos.files").deleteMany({ "metadata.demo": true }),
@@ -302,6 +305,14 @@ async function seedCampus({ users, gvps, smms, day }) {
       await BookIssue.create({ school: sc._id, book: l.book._id, student: l.kid._id, issuedAt: day(l.issued), dueAt: day(l.due), ...(l.returned ? { returnedAt: day(l.returned), fine: l.fine, fineStatus: l.fineStatus } : {}) });
       if (!l.returned) await Book.updateOne({ _id: l.book._id }, { $inc: { issued: 1 } });
     }
+  }
+
+  // The demo student is waiting for a book that's out (GVPS).
+  const me = users.get("student.gvps");
+  const full = await Book.findOne({ school: gvps._id, $expr: { $gte: ["$issued", "$copies"] } }).lean();
+  const holder = full && (await BookIssue.findOne({ book: full._id, returnedAt: null }).lean());
+  if (full && String(holder?.student) !== String(me.student)) {
+    await BookReservation.create({ school: gvps._id, book: full._id, student: me.student, requestedBy: me._id });
   }
 
   // A bonafide certificate for the demo student.
@@ -426,7 +437,7 @@ async function seedCampus({ users, gvps, smms, day }) {
     for (const u of DEMO_USERS) {
       const sc = schoolsByCode.get(u.school);
       const doc = { username: u.username, name: u.name, role: u.role, passwordHash, grants: u.grants };
-      if (u.role === "principal") doc.schools = [sc._id];
+      if (u.role === "principal" || u.role === "librarian") doc.schools = [sc._id];
       if (u.role === "teacher") doc.assignments = u.classes.map(([className, section]) => ({ school: sc._id, className, ...(section ? { section } : {}) }));
       const first7A = await Student.findOne({ school: sc._id, className: "7", section: "A", deletedAt: null }).sort({ rollNumber: 1 }).lean();
       if (u.role === "parent") {
@@ -440,7 +451,7 @@ async function seedCampus({ users, gvps, smms, day }) {
       }
       const created = await User.create(doc);
       const initials = u.name.replace(/^(Dr|Sr|Mr|Ms|Mrs)\.\s*/, "").split(" ").map((w) => w[0]).join("").slice(0, 2);
-      const png = await sharp(avatarSvg(initials, u.role === "teacher" ? "#15803d" : u.role === "principal" ? "#0f766e" : u.role === "student" ? "#7c3aed" : "#c2410c")).png().toBuffer();
+      const png = await sharp(avatarSvg(initials, u.role === "teacher" ? "#15803d" : u.role === "principal" ? "#0f766e" : u.role === "student" ? "#7c3aed" : u.role === "librarian" ? "#a16207" : "#c2410c")).png().toBuffer();
       await setUserPhoto(created._id, png);
     }
     await mongoose.connection.db.collection("userPhotos.files").updateMany({}, { $set: { "metadata.demo": true } });

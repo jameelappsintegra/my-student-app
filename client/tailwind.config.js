@@ -31,6 +31,7 @@ module.exports = {
       { "edupro-teacher": theme("#15803d") }, // teacher: green
       { "edupro-parent": theme("#c2410c") }, // parent: orange
       { "edupro-student": theme("#7c3aed") }, // student: violet
+      { "edupro-librarian": theme("#a16207") }, // librarian: amber
     ],
   },
 };

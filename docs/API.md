@@ -242,3 +242,21 @@ All need staff access; changes need `transport.manage` (admin, principal, or a t
 | GET | `/students/:id/progress` | Anyone who can see the student (not under a cross-school share). For the school's academic year: `results { exams, subjects (with previous and change), latest, change }`, `attendance { percentage, schoolDays, absent, monthly }`, `homework { summary, recent }`, `library { onLoan, overdue }`, and `fees` only for people with `fees.view`. Parents and students get published results only. |
 | GET | `/insights/class?school=&className=&section=` | `reports.view` and assigned to the class (principals: their schools). Per student: attendance, latest exam (drafts included), online homework handed in, fees (only with `fees.view`) and `flags` (`low_attendance`, `failing`, `missing_homework`, `fees_overdue`). Plus `summary` and `daily` attendance for the last 14 marked days. |
 | GET | `/students/:id/fees/:invoiceId/payments/:paymentId/receipt` | `fees.view`. Receipt number, date, amount (`amountText` in the school's currency), method, reference, the bill, the balance after this payment, student and school details. |
+
+## Librarian
+
+`role: "librarian"` users are created with `schools` (the libraries they run). They have `library.manage`, `students.search` (their schools) and `schools.view`.
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| GET | `/library/dashboard?school=` | Books (titles, copies, on shelf), loans (on loan, overdue, due today, this month, returns), fines (due, collected and waived this month), reservations (waiting, ready), the 5 most-borrowed books in 90 days and the oldest 10 overdue loans. |
+| POST | `/library/issues/:id/renew` | Extends by the loan period. At most 2 renewals; not when overdue or when students are waiting. |
+| POST | `/library/issues/:id/remind` | Overdue loans only. In-app notification to the student and parents with the fine so far. |
+| POST | `/library/remind-overdue` | `{ school }`. Every overdue loan not reminded in the last 2 days. |
+| POST | `/library/books/:id/reserve` | Student: for themselves. Parent: `{ student }` (their child). Library staff: `{ student }` in their school. Only when no copy is free; one open reservation per book, 3 per student. Returns the queue `place`. |
+| GET | `/library/reservations?school=&status=waiting|ready|open` | Families: their own. Library staff: their schools. |
+| DELETE | `/library/reservations/:id` | Cancel (the student's family or library staff). A ready copy passes to the next in line. |
+| POST | `/library/books/import?dryRun=true` | Multipart: `school`, `file` (CSV with `title,author,isbn,category,publisher,shelf,copies`). Errors by row (nothing saved); a matching ISBN, or title and author, adds copies. |
+| GET | `/library/books/import/template` | CSV template. |
+
+Lending respects holds: copies kept for reservations can only be lent to the student they're kept for, and lending fulfils that reservation. Returning a book moves the next waiting reservation to `ready` for 3 days and notifies the family. `GET /library/books` now also returns `onHold`, `waiting`, `available` (after holds) and, for families, `myReservation`.

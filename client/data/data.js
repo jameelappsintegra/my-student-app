@@ -3,9 +3,9 @@
 // appear in the phone's bottom tab bar.
 const menuItems = [
   { name: "Home", short: "Home", link: "/", icon: "home", mobile: true },
-  { name: "Students", short: "Students", link: "/students", icon: "students", mobile: true, perm: "students.search" },
+  { name: "Students", short: "Students", link: "/students", icon: "students", mobile: true, perm: "students.search", roles: ["admin", "principal", "teacher"] },
   { name: "Attendance", short: "Attendance", link: "/attendance", icon: "calendar", mobile: true, perm: "attendance.mark" },
-  { name: "Homework", short: "Homework", link: "/homework", icon: "book", mobile: ["teacher", "parent", "student"] },
+  { name: "Homework", short: "Homework", link: "/homework", icon: "book", mobile: ["teacher", "parent", "student"], roles: ["admin", "principal", "teacher", "parent", "student"] },
   { name: "Progress", short: "Progress", link: "/progress", icon: "chart", roles: ["parent", "student"], mobile: ["parent", "student"] },
   { name: "Fees & receipts", short: "Fees", link: "/fees", icon: "wallet", perm: "fees.view", roles: ["parent"] },
   { name: "Class insights", short: "Insights", link: "/insights", icon: "chart", perm: "reports.view", roles: ["teacher", "principal", "admin"] },
@@ -20,7 +20,7 @@ const menuItems = [
   { name: "Reports", short: "Reports", link: "/reports", icon: "report", perm: "reports.view", mobile: "principal" },
   { name: "Schools", link: "/schools", icon: "schools", perm: "schools.manage" },
   { name: "Import students", link: "/students/import", icon: "upload", perm: "students.import" },
-  { name: "Library", link: "/library", icon: "library" },
+  { name: "Library", short: "Library", link: "/library", icon: "library", mobile: "librarian" },
   { name: "Transport", link: "/transport", icon: "bus", perm: "transport.manage" },
   { name: "Certificates", link: "/certificates", icon: "certificate", perm: "certificates.issue" },
   { name: "Shared records", link: "/shares", icon: "share", perm: ["shares.request", "shares.approve"] },
@@ -28,7 +28,7 @@ const menuItems = [
   { name: "School settings", link: "/settings", icon: "settings", perm: "settings.manage" },
   { name: "Audit log", link: "/audit", icon: "shield", perm: "audit.view" },
   // Reached from the name in the sidebar; a bottom tab for parents.
-  { name: "My account", short: "Account", link: "/account", icon: "account", mobile: ["parent", "student"], sidebar: false },
+  { name: "My account", short: "Account", link: "/account", icon: "account", mobile: ["parent", "student", "librarian"], sidebar: false },
 ];
 
 const allowed = (can, perm) => !perm || (Array.isArray(perm) ? perm.some(can) : can(perm));

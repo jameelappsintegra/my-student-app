@@ -12,6 +12,7 @@ const ROLES = [
   ["principal", "Principals"],
   ["parent", "Parents"],
   ["student", "Students"],
+  ["librarian", "Librarians"],
   ["admin", "Admins"],
 ];
 const ROLE_HELP = {
@@ -19,6 +20,7 @@ const ROLE_HELP = {
   principal: "Sees everything in their schools: dashboard, students, attendance, results, fees and reports. Approves record-sharing requests.",
   teacher: "Sees only their assigned classes. Marks attendance and enters marks.",
   parent: "Sees only their own children, read-only. Can update their child's photo.",
+  librarian: "Runs the library of their school: catalogue, lending, returns, fines, reservations and reminders. Can find students to lend books but can't open their records.",
   student: "Sees their own record, published results, timetable and calendar. Hands in homework online.",
 };
 
@@ -148,7 +150,7 @@ function UserDialog({ user, role: initialRole, onClose, onSaved }) {
     setError(null);
     const body = { name: f.name.trim(), phone: f.phone.trim(), active: f.active };
     if (f.role === "teacher") body.assignments = f.assignments.filter((a) => a.school && a.className).map((a) => ({ ...a, section: a.section.trim() }));
-    if (f.role === "principal") body.schools = f.schools;
+    if (f.role === "principal" || f.role === "librarian") body.schools = f.schools;
     if (f.role === "parent") body.children = f.children.map((c) => c.id);
     if (f.role === "student" && isNew) body.student = f.student[0]?.id;
     if (f.role === "teacher" || f.role === "principal") {
@@ -209,9 +211,9 @@ function UserDialog({ user, role: initialRole, onClose, onSaved }) {
           {errors.assignments && <p className="text-error text-xs">{errors.assignments}</p>}
         </div>
       )}
-      {f.role === "principal" && (
+      {(f.role === "principal" || f.role === "librarian") && (
         <div className="mt-4">
-          <p className="font-medium text-sm mb-2">Schools they head</p>
+          <p className="font-medium text-sm mb-2">{f.role === "librarian" ? "Library of" : "Schools they head"}</p>
           {schools.map((s) => (
             <label key={s.id} className="label cursor-pointer justify-start gap-3 py-1">
               <input type="checkbox" className="checkbox checkbox-sm checkbox-primary" checked={f.schools.includes(s.id)} onChange={(e) => set("schools", e.target.checked ? [...f.schools, s.id] : f.schools.filter((x) => x !== s.id))} />

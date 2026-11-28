@@ -25,7 +25,7 @@ jest.mock("../services/api", () => {
       me: { children: jest.fn(() => Promise.resolve({ data: [{ id: "k1", firstName: "Asha", lastName: "Iyer", admissionNumber: "GVPS-2026-00001", className: "7", section: "A", school: { id: "s1", name: "Green Valley" }, attendance: { percentage: 92 }, latestResult: null, fees: { balance: 0 } }] })) },
       homework: { list: jest.fn(), create: jest.fn(), remove: jest.fn(), submit: jest.fn(), submissions: jest.fn(), review: jest.fn() },
       settings: { get: jest.fn(), save: jest.fn(), calendar: jest.fn() },
-      library: { books: jest.fn(), issues: jest.fn(), issue: jest.fn() },
+      library: { books: jest.fn(), issues: jest.fn(), issue: jest.fn(), reservations: jest.fn(() => Promise.resolve({ data: [] })) },
       certificates: { list: jest.fn(), issue: jest.fn(), verify: jest.fn() },
     },
   };

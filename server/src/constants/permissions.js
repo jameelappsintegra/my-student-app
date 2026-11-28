@@ -53,6 +53,9 @@ const ROLE_PERMISSIONS = {
   parent: ["students.view", "students.photo", "fees.view", "leave.request"],
   // Students see their own record and hand in homework.
   student: ["students.view", "homework.submit"],
+  // Librarians run the library of their schools. They can find students
+  // (name, class, admission number) to lend books, but not open records.
+  librarian: ["library.manage", "students.search", "schools.view"],
 };
 
 // Extra permissions an admin can switch on for one person.

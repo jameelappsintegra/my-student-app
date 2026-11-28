@@ -14,6 +14,10 @@ const issueSchema = new mongoose.Schema(
     fine: { type: Number, min: 0, default: 0 },
     fineStatus: { type: String, enum: ["none", "due", "paid", "waived"], default: "none" },
     issuedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    renewals: { type: Number, default: 0 },
+    remindedAt: Date,
+    // When a fine was collected or waived (for the month's fine total).
+    fineSettledAt: Date,
     returnedTo: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },
   { timestamps: true, toJSON: { transform: cleanTransform } }

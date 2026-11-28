@@ -28,7 +28,8 @@ const roleRules = (d, ctx) => {
   if (d.role !== "parent" && d.children?.length) ctx.addIssue({ code: "custom", path: ["children"], message: "Only parents have children linked" });
   if (d.role === "student" && !d.student) ctx.addIssue({ code: "custom", path: ["student"], message: "Choose the student this login is for" });
   if (d.role !== "student" && d.student) ctx.addIssue({ code: "custom", path: ["student"], message: "Only student logins are linked to a student record" });
-  if (d.role !== "principal" && d.schools?.length) ctx.addIssue({ code: "custom", path: ["schools"], message: "Only principals head schools" });
+  if (!["principal", "librarian"].includes(d.role) && d.schools?.length) ctx.addIssue({ code: "custom", path: ["schools"], message: "Only principals and librarians are linked to schools" });
+  if (d.role === "librarian" && !d.schools?.length) ctx.addIssue({ code: "custom", path: ["schools"], message: "Choose the school whose library they run" });
   for (const g of d.grants || []) {
     if (!GRANTABLE[g].includes(d.role)) ctx.addIssue({ code: "custom", path: ["grants"], message: `${g} can't be given to a ${d.role}` });
   }

@@ -55,7 +55,7 @@ async function withDetails(user) {
     const k = await Student.findById(user.student).select("firstName lastName admissionNumber className section school").populate("school", "name code").lean();
     if (k) out.studentDetails = { id: String(k._id), name: `${k.firstName} ${k.lastName}`, admissionNumber: k.admissionNumber, className: k.className, section: k.section, school: k.school?.code };
   }
-  if (user.role === "principal" && user.schools?.length) {
+  if (["principal", "librarian"].includes(user.role) && user.schools?.length) {
     const schools = await School.find({ _id: { $in: user.schools } }).select("name code").lean();
     out.schoolDetails = schools.map((s) => ({ id: String(s._id), name: s.name, code: s.code }));
   }
@@ -111,7 +111,7 @@ async function updateUser(id, changes, actorId) {
   if (changes.active === false && user.active) await assertNotLastAdmin(user, actorId, "deactivate");
   if (changes.assignments && user.role !== "teacher") throw ApiError.badRequest("Only teachers have classes");
   if (changes.children && user.role !== "parent") throw ApiError.badRequest("Only parents have children linked");
-  if (changes.schools && user.role !== "principal") throw ApiError.badRequest("Only principals head schools");
+  if (changes.schools && !["principal", "librarian"].includes(user.role)) throw ApiError.badRequest("Only principals and librarians are linked to schools");
   if (changes.student && user.role !== "student") throw ApiError.badRequest("Only student logins are linked to a student record");
   for (const g of changes.grants || []) {
     if (!GRANTABLE[g].includes(user.role)) throw ApiError.badRequest(`${g} can't be given to a ${user.role}`);
